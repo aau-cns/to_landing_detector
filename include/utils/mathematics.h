@@ -42,6 +42,7 @@ namespace utils
      * @brief Rotation matrix from a given 9x1 vector in row-major order
      * @param 9x1 vector in row-major order
      * @return 3x3 Rotation matrix
+     * @bug technically this is not a good definition (not implicit); does not adhere to coding style.
      */
     inline Eigen::Matrix3d Rot(const std::vector<double> &x) {
 
@@ -52,6 +53,15 @@ namespace utils
            x.at(6),x.at(7),x.at(8);
 
       return R;
+    }
+
+    ///
+    /// \brief Vec creates 3x1 vector from given a std::vector
+    /// \param x vector as std::vector
+    /// \return 3x1 Eigen vector
+    ///
+    inline Eigen::Vector3d Vec(const std::vector<double> &x) {
+      return Eigen::Vector3d(x.at(0),x.at(1),x.at(2));
     }
 
     /**

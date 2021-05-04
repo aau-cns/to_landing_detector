@@ -23,6 +23,10 @@ namespace toland
     nh_.param<double>("angle_threshold", k_angle_threshold_deg_, k_angle_threshold_deg_);
     // Get IMU-Platform rotation
     nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
+    // Get LRF-Platform rotation
+    nh_.param<std::vector<double>>("R_LP", k_R_PL, k_R_PL);
+    // Get LRF-Platform translation
+    nh_.param<std::vector<double>>("t_LP", k_t_PL, k_t_PL);
 
     // topic strings
     std::string imu_topic, lrf_topic;
@@ -56,7 +60,7 @@ namespace toland
     meas.wm << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
     meas.am << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z;
 
-    // Push measurement into buffr
+    // Push measurement into buffer
     imu_data_buffer_.emplace_back(meas);
 
     // Remove oldest if sensor reading window width is reached
@@ -76,9 +80,33 @@ namespace toland
     }
   } // void imuCallback(...)
 
+  /// \todo merge part of this function with FlightDetector::imuCallback
   void FlightDetector::lrfCallback(const sensor_msgs::Range::ConstPtr& msg)
   {
+    // Parse incoming message and fill out specified data structure
+    LrfData_t meas;
+    meas.timestamp = msg->header.stamp.toSec();
+    meas.range = msg->range;
 
+    // Push measurement into buffer
+    lrf_data_buffer_.emplace_back(meas);
+
+    // TODO(scm): merge this with imu callback into general function
+    // Remove oldest if sensor reading window width is reached
+    if ((meas.timestamp - lrf_data_buffer_.begin()->timestamp) > k_sensor_readings_window_s_)
+    {
+      // Since we check everytime a new measurement is added to the buffer it would
+      // be sufficient to simply remove the first element, however it is more robust
+      // to check everytime how many elements we should remove.
+
+      double Dt = meas.timestamp - k_sensor_readings_window_s_;
+
+      // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
+      auto it = std::find_if(lrf_data_buffer_.begin(), lrf_data_buffer_.end(), [&Dt](LrfData_t meas){return meas.timestamp >= Dt;});
+
+      // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
+      lrf_data_buffer_.erase(lrf_data_buffer_.begin(), it-1);
+    }
   } // void lrfCallback(...)
 
   bool FlightDetector::takeoffHandler(
@@ -153,5 +181,39 @@ namespace toland
       // test passed
       return true;
   }  // bool checkFlatness()
+
+  bool FlightDetector::checkLanded()
+  {
+    // Return if buffer is empty
+      if (lrf_data_buffer_.empty())
+          return false;
+
+      // Return if minimum window is not reached
+      if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
+        return false;
+
+      // Define mean range
+      double range_mean = 0.0;
+
+      // Calculate the mean acceleration and the mean angular velocity
+      for (auto &it : lrf_data_buffer_)
+      {
+        range_mean += it.range;
+      }
+      range_mean = range_mean/lrf_data_buffer_.size();
+
+      // create vector with range in z direction (as defined per LRF)
+      Eigen::Vector3d r_L(0,0,range_mean);
+
+      // Apply transformation between the lrf and the platform
+      Eigen::Vector3d r_P = utils::math::Rot(k_R_PL)*r_L + utils::math::Vec(k_t_PL);
+
+      // check distance to ground with threshold
+      if (r_P(2) > k_distance_threshold_m_ || r_P(2) < 0)
+        return false;
+
+      // test passed
+      return true;
+  } // bool checkLanded()
 
 } // namespace toland

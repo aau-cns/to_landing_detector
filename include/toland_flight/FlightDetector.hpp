@@ -21,13 +21,14 @@
 
 namespace toland
 {
-  /**
-   * @brief The FlightDetector class
-   */
+  ///
+  /// \brief The FlightDetector class
+  ///
   class FlightDetector
   {
   private:
-    typedef utils::sensors::imuData ImuData_t ;
+    typedef utils::sensors::imuData ImuData_t;
+    typedef utils::sensors::lrfData LrfData_t;
 
   private:
     /// ROS NODE HANDLES
@@ -40,12 +41,16 @@ namespace toland
     ros::ServiceServer srv_to_;                                   //!< Takeoff service
 
     /// Measurement buffers
-    std::vector<ImuData_t> imu_data_buffer_;                       //!< buffer for IMU measurements
+    std::vector<ImuData_t> imu_data_buffer_;                      //!< buffer for IMU measurements
+    std::vector<LrfData_t> lrf_data_buffer_;                      //!< buffer for LRF measurements
 
     /// ROS Static Parameters
     double k_sensor_readings_window_s_ {1.0};
     double k_angle_threshold_deg_ {10.0};
+    double k_distance_threshold_m_ {0.1};
     std::vector<double> k_R_IP = {1,0,0,0,1,0,0,0,1};
+    std::vector<double> k_R_PL = {1,0,0,0,1,0,0,0,1};
+    std::vector<double> k_t_PL = {0,0,0};
 
     /// ROS Callback Functions
 
@@ -62,6 +67,12 @@ namespace toland
     ///
     void lrfCallback(const sensor_msgs::Range::ConstPtr& msg);
 
+    ///
+    /// \brief takeoffHandler
+    /// \param req
+    /// \param res
+    /// \return
+    ///
     bool takeoffHandler(std_srvs::Trigger::Request& req,
                         std_srvs::Trigger::Response& res);
 
@@ -71,6 +82,13 @@ namespace toland
     /// \author Alessandro Fornasier
     ///
     bool checkFlatness();
+
+    ///
+    /// \brief checkLanded checks if the UAV has landed using the LRF for distance to ground measurement
+    /// \return true if distance is below threshold k_distance_threshold_m_
+    /// \author Martin Scheiber
+    ///
+    bool checkLanded();
 
 public:
     FlightDetector();
