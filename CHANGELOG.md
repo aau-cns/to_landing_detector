@@ -8,9 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **FEATURE 2**: `feat/landing_detection`
 ### Added
 - Added LRF callback and structures
+- Added saftey mechanism to return failure if no measurement was received for the duration of the window size
+(parameter: `sensor_readings_window_s_`)
+- Added default launchfile.
 
 ### Changed
 - Created interface sturcture for sensor data, which specific sensor data readings inherit.
+- Renamed `main.cpp` to `FlightDetector_Node.cpp`.
 
 **[FEATURE 1]**: `feat/takeoff_interface`
 ### Added

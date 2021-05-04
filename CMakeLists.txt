@@ -17,7 +17,7 @@ else()
 endif()
 
 ## enforcing cleaner code by adding -Wall and -Werror, the compiler will not ignore warnings anymore
-#add_definitions(-Wall -Werror)
+add_definitions(-Wall -Werror)
 
 ## Display compiler flags
 message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")
@@ -148,7 +148,7 @@ include_directories(
 
 set(
     SRC_FILES
-    src/main.cpp
+    src/FlightDetector_Node.cpp
     src/FlightDetector.cpp
 )
 

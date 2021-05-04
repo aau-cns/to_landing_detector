@@ -52,6 +52,10 @@ namespace toland
     std::vector<double> k_R_PL = {1,0,0,0,1,0,0,0,1};
     std::vector<double> k_t_PL = {0,0,0};
 
+    /// Internal Flags
+    std::atomic<bool> f_have_imu_ {false};
+    std::atomic<bool> f_have_lrf_ {false};
+
     /// ROS Callback Functions
 
     ///

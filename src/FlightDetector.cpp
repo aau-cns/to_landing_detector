@@ -21,6 +21,8 @@ namespace toland
     nh_.param<double>("sensor_readings_window", k_sensor_readings_window_s_, k_sensor_readings_window_s_);
     // Get roll and pitch angle threshold for platform flatness check
     nh_.param<double>("angle_threshold", k_angle_threshold_deg_, k_angle_threshold_deg_);
+    // Get distance threshold for platform landing check
+    nh_.param<double>("distance_threshold", k_distance_threshold_m_, k_distance_threshold_m_);
     // Get IMU-Platform rotation
     nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
     // Get LRF-Platform rotation
@@ -78,6 +80,9 @@ namespace toland
       // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
       imu_data_buffer_.erase(imu_data_buffer_.begin(), it-1);
     }
+
+    // set imu flag
+    f_have_imu_ = true;
   } // void imuCallback(...)
 
   /// \todo merge part of this function with FlightDetector::imuCallback
@@ -107,14 +112,22 @@ namespace toland
       // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
       lrf_data_buffer_.erase(lrf_data_buffer_.begin(), it-1);
     }
+
+    // set lrf flag
+    f_have_lrf_ = true;
   } // void lrfCallback(...)
 
   bool FlightDetector::takeoffHandler(
       std_srvs::Trigger::Request& req,
       std_srvs::Trigger::Response& res)
   {
+    // check for flatness and if LRF present if we are landed
+    bool is_sucess = f_have_imu_ && checkFlatness();
+    if (is_sucess && f_have_lrf_)
+      is_sucess = checkLanded();
+
     // create response message
-    res.success = checkFlatness();
+    res.success = is_sucess;
     res.message = std::string("number of measurements: %d", imu_data_buffer_.size());
 
     // return sucessfull execution
@@ -130,6 +143,15 @@ namespace toland
       // Return if minimum window is not reached
       if ((imu_data_buffer_.end()->timestamp - imu_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
         return false;
+
+      // return if last measurement is older than minimum window time
+      if (ros::Time::now().toSec() - imu_data_buffer_.end()->timestamp > k_sensor_readings_window_s_)
+      {
+        // also reset the buffer in this case
+        imu_data_buffer_.clear();
+        f_have_imu_ = false;
+        return false;
+      }
 
       // Define mean acceleration and mean angular velocity
       Eigen::Vector3d acc_mean = Eigen::Vector3d::Zero();
@@ -178,7 +200,8 @@ namespace toland
       if (abs(eul_ang(0)) > k_angle_threshold_deg_ || abs(eul_ang(1)) > k_angle_threshold_deg_)
         return false;
 
-      // test passed
+      // test passed, reset flag
+      f_have_imu_ = false;
       return true;
   }  // bool checkFlatness()
 
@@ -191,6 +214,15 @@ namespace toland
       // Return if minimum window is not reached
       if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
         return false;
+
+      // return if last measurement is older than minimum window time
+      if (ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp > k_sensor_readings_window_s_)
+      {
+        // also reset the buffer in this case
+        lrf_data_buffer_.clear();
+        f_have_lrf_ = false;
+        return false;
+      }
 
       // Define mean range
       double range_mean = 0.0;
@@ -205,14 +237,15 @@ namespace toland
       // create vector with range in z direction (as defined per LRF)
       Eigen::Vector3d r_L(0,0,range_mean);
 
-      // Apply transformation between the lrf and the platform
+      // apply transformation between the lrf and the platform
       Eigen::Vector3d r_P = utils::math::Rot(k_R_PL)*r_L + utils::math::Vec(k_t_PL);
 
       // check distance to ground with threshold
       if (r_P(2) > k_distance_threshold_m_ || r_P(2) < 0)
         return false;
 
-      // test passed
+      // test passed, reset flag
+      f_have_lrf_ = false;
       return true;
   } // bool checkLanded()
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- rostopic strings -->
+  <arg name="imu_topic" default="/imu" />
+  <arg name="lrf_topic" default="/lrf" />
+
+  <!-- calibration parameters -->
+  <arg name="R_IP"      default="[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]" />
+  <arg name="R_PL"      default="[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]" />
+  <arg name="t_PL"      default="[0.0, 0.0, 0.0]" />
+
+  <!-- observation parameters -->
+  <arg name="sensor_readings_window"  default="1.0" />
+  <arg name="angle_threshold"         default="10.0" />
+  <arg name="distance_threshold"      default="0.1" />
+
+  <node name="toland" pkg="toland_flight" type="toland_node" output="screen" respawn="true" clear_params="true">
+    <!-- rostopic strings -->
+    <param name="imu_topic"               type="string" value="$(arg imu_topic)" />
+    <param name="lrf_topic"               type="string" value="$(arg lrf_topic)" />
+
+    <!-- observation parameters -->
+    <param name="sensor_readings_window"  type="double" value="$(arg sensor_readings_window)" />
+    <param name="angle_threshold"         type="double" value="$(arg angle_threshold)" />
+    <param name="distance_threshold"      type="double" value="$(arg distance_threshold)" />
+
+    <!-- calibration parameters -->
+    <rosparam param="R_PI" subst_value="true">$(arg R_IP)</rosparam>
+    <rosparam param="R_PL" subst_value="true">$(arg R_PL)</rosparam>
+    <rosparam param="t_PL" subst_value="true">$(arg t_PL)</rosparam>
+  </node>
+</launch>
