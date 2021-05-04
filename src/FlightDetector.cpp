@@ -16,9 +16,16 @@ namespace toland
   FlightDetector::FlightDetector()
     : nh_("toland")
   {
+    // read general parameters
+    // Get sensor reading window
+    nh_.param<double>("sensor_readings_window", k_sensor_readings_window_s_, k_sensor_readings_window_s_);
+    // Get roll and pitch angle threshold for platform flatness check
+    nh_.param<double>("angle_threshold", k_angle_threshold_deg_, k_angle_threshold_deg_);
+    // Get IMU-Platform rotation
+    nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
+
     // topic strings
     std::string imu_topic, lrf_topic;
-
     // read topic parameters
     if(!nh_.getParam("imu_topic", imu_topic))
     {
@@ -33,15 +40,18 @@ namespace toland
             "No LRF topic defined, using " << lrf_topic << std::endl);
     }
 
-    // setup subsribers
+    // setup subscribers
     sub_imu_ = nh_.subscribe(imu_topic, 999, &FlightDetector::imuCallback, this);
     sub_imu_ = nh_.subscribe(lrf_topic, 999, &FlightDetector::lrfCallback, this);
+
+    // setup services
+    srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
   } // FlightDetector()
 
   void FlightDetector::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   {
     // Parse incoming message and fill out specified data structure
-    imuData meas;
+    ImuData_t meas;
     meas.timestamp = msg->header.stamp.toSec();
     meas.wm << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
     meas.am << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z;
@@ -59,7 +69,7 @@ namespace toland
       double Dt = meas.timestamp - k_sensor_readings_window_s_;
 
       // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
-      auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](imuData meas){return meas.timestamp >= Dt;});
+      auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](ImuData_t meas){return meas.timestamp >= Dt;});
 
       // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
       imu_data_buffer_.erase(imu_data_buffer_.begin(), it-1);
@@ -70,5 +80,78 @@ namespace toland
   {
 
   } // void lrfCallback(...)
+
+  bool FlightDetector::takeoffHandler(
+      std_srvs::Trigger::Request& req,
+      std_srvs::Trigger::Response& res)
+  {
+    // create response message
+    res.success = checkFlatness();
+    res.message = std::string("number of measurements: %d", imu_data_buffer_.size());
+
+    // return sucessfull execution
+    return true;
+  } // bool takeoffHandler(...)
+
+  bool FlightDetector::checkFlatness()
+  {
+    // Return if buffer is empty
+      if (imu_data_buffer_.empty())
+          return false;
+
+      // Return if minimum window is not reached
+      if ((imu_data_buffer_.end()->timestamp - imu_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
+        return false;
+
+      // Define mean acceleration and mean angular velocity
+      Eigen::Vector3d acc_mean = Eigen::Vector3d::Zero();
+      Eigen::Vector3d ang_mean = Eigen::Vector3d::Zero();
+
+      // Calculate the mean acceleration and the mean angular velocity
+      for (auto &it : imu_data_buffer_)
+      {
+        acc_mean += it.am;
+        ang_mean += it.wm;
+      }
+      acc_mean = acc_mean/imu_data_buffer_.size();
+      ang_mean = ang_mean/imu_data_buffer_.size();
+
+      // As further check we could eventually compute
+      // the sample variance to check if there have
+      // been to much excitation and return false
+
+      // Get z axis aligned with gravity direction
+      Eigen::Vector3d z_axis = acc_mean/acc_mean.norm();
+
+      // Make x axis perpendicular to z axis
+      Eigen::Vector3d e_1(1,0,0);
+      Eigen::Vector3d x_axis = e_1-z_axis*z_axis.transpose()*e_1;
+      x_axis= x_axis/x_axis.norm();
+
+      // Get y axis from the cross product of these two
+      Eigen::Vector3d y_axis = utils::math::skew(z_axis)*x_axis;
+
+      // Get rotation of the imu using axes as columns
+      // R_GI defines the rotation matrix that rotates
+      // vector in IMU frame (I_x) to vector in global
+      // inertial gravity-aligned frame (G_x = R_GI * I_x)
+      Eigen::Matrix3d R_GI;
+      R_GI.block(0,0,3,1) = -x_axis;
+      R_GI.block(0,1,3,1) = -y_axis;
+      R_GI.block(0,2,3,1) = z_axis;
+
+      // Apply Rotation between the imu and the platform
+      Eigen::Matrix3d R_GP = R_GI*utils::math::Rot(k_R_IP);
+
+      // Convert Rotation matrix to euler angles
+      Eigen::Vector3d eul_ang = utils::math::eul(R_GP);
+
+      // Compare roll and pitch with thresholds
+      if (abs(eul_ang(0)) > k_angle_threshold_deg_ || abs(eul_ang(1)) > k_angle_threshold_deg_)
+        return false;
+
+      // test passed
+      return true;
+  }  // bool checkFlatness()
 
 } // namespace toland

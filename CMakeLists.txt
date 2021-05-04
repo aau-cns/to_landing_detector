@@ -29,6 +29,7 @@ message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  std_srvs
   sensor_msgs
 )
 
@@ -153,8 +154,8 @@ set(
 
 set(
     HEADER_FILES
-    include/flatness/mathematics.h
-    include/flatness/sensors.h
+    include/utils/mathematics.h
+    include/utils/sensors.h
     include/toland_flight/FlightDetector.hpp
 )
 
