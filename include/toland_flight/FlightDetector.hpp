@@ -12,6 +12,7 @@
 #define FLIGHTDETECTOR_HPP
 
 #include <ros/ros.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Range.h>
 #include <std_srvs/Trigger.h>
@@ -40,6 +41,8 @@ namespace toland
 
     ros::ServiceServer srv_to_;                                   //!< Takeoff service
 
+    ros::Publisher pub_land_;                                     //!< publishes
+
     /// Measurement buffers
     std::vector<ImuData_t> imu_data_buffer_;                      //!< buffer for IMU measurements
     std::vector<LrfData_t> lrf_data_buffer_;                      //!< buffer for LRF measurements
@@ -55,6 +58,7 @@ namespace toland
     /// Internal Flags
     std::atomic<bool> f_have_imu_ {false};
     std::atomic<bool> f_have_lrf_ {false};
+    std::atomic<bool> f_reqested_to {false};
 
     /// ROS Callback Functions
 

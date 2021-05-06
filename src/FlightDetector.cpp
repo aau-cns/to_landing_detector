@@ -50,6 +50,9 @@ namespace toland
     sub_imu_ = nh_.subscribe(imu_topic, 999, &FlightDetector::imuCallback, this);
     sub_imu_ = nh_.subscribe(lrf_topic, 999, &FlightDetector::lrfCallback, this);
 
+    // setup publishers
+    pub_land_ = nh_.advertise<std_msgs::Bool>("is_landed", 1);
+
     // setup services
     srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
   } // FlightDetector()
@@ -115,6 +118,15 @@ namespace toland
 
     // set lrf flag
     f_have_lrf_ = true;
+
+    // publish landed message if below threshold
+    if (f_reqested_to && checkLanded())
+    {
+      // setup message
+      std_msgs::Bool msg;
+      msg.data = true;
+      pub_land_.publish(msg);
+    }
   } // void lrfCallback(...)
 
   bool FlightDetector::takeoffHandler(
@@ -129,6 +141,9 @@ namespace toland
     // create response message
     res.success = is_sucess;
     res.message = std::string("number of measurements: %d", imu_data_buffer_.size());
+
+    // setup request takeof
+    f_reqested_to = is_sucess;
 
     // return sucessfull execution
     return true;
