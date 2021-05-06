@@ -5,7 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [UNRELEASED]
-**FEATURE 2**: `feat/landing_detection`
+**FEATURE 3**: `feat/landing_interface`
+### Added
+- Interface to topic which provides msg on `/toland/is_landed` with boolean set to true if is_flat().
+- `CONTRIBUTORS.md` file.
+
+**[FEATURE 2]**: `feat/landing_detection`
 ### Added
 - Added LRF callback and structures
 - Added saftey mechanism to return failure if no measurement was received for the duration of the window size
@@ -26,5 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added namespaces for flatness detection (utils) from AMAZE autonomy.
 - Updated license headers in utils module.
 
+[Feature 2]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/68994fe4
 [Feature 1]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/07ee025c
 [Unreleased]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/compare/develop...main

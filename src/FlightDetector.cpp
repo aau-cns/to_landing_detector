@@ -124,7 +124,7 @@ namespace toland
     {
       // setup message
       std_msgs::Bool msg;
-      msg.data = true;
+      msg.data = checkFlatness();
       pub_land_.publish(msg);
     }
   } // void lrfCallback(...)
