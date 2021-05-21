@@ -46,6 +46,7 @@ namespace toland
     /// Measurement buffers
     std::vector<ImuData_t> imu_data_buffer_;                      //!< buffer for IMU measurements
     std::vector<LrfData_t> lrf_data_buffer_;                      //!< buffer for LRF measurements
+    double takeoff_start_time {0.0};
 
     /// ROS Static Parameters
     double k_sensor_readings_window_s_ {1.0};
@@ -54,6 +55,7 @@ namespace toland
     std::vector<double> k_R_IP = {1,0,0,0,1,0,0,0,1};
     std::vector<double> k_R_PL = {1,0,0,0,1,0,0,0,1};
     std::vector<double> k_t_PL = {0,0,0};
+    double k_landed_wait_time = {30.0};
 
     /// Internal Flags
     std::atomic<bool> f_have_imu_ {false};

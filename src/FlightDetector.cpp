@@ -48,7 +48,7 @@ namespace toland
 
     // setup subscribers
     sub_imu_ = nh_.subscribe(imu_topic, 999, &FlightDetector::imuCallback, this);
-    sub_imu_ = nh_.subscribe(lrf_topic, 999, &FlightDetector::lrfCallback, this);
+    sub_lrf_ = nh_.subscribe(lrf_topic, 999, &FlightDetector::lrfCallback, this);
 
     // setup publishers
     pub_land_ = nh_.advertise<std_msgs::Bool>("is_landed", 1);
@@ -81,7 +81,9 @@ namespace toland
       auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](ImuData_t meas){return meas.timestamp >= Dt;});
 
       // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
-      imu_data_buffer_.erase(imu_data_buffer_.begin(), it-1);
+      if (it != imu_data_buffer_.begin()) {
+	imu_data_buffer_.erase(imu_data_buffer_.begin(), it);
+      }     
     }
 
     // set imu flag
@@ -113,7 +115,9 @@ namespace toland
       auto it = std::find_if(lrf_data_buffer_.begin(), lrf_data_buffer_.end(), [&Dt](LrfData_t meas){return meas.timestamp >= Dt;});
 
       // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
-      lrf_data_buffer_.erase(lrf_data_buffer_.begin(), it-1);
+      if (it != lrf_data_buffer_.begin()) {
+	      lrf_data_buffer_.erase(lrf_data_buffer_.begin(), it);
+      }
     }
 
     // set lrf flag
@@ -125,7 +129,8 @@ namespace toland
       // setup message
       std_msgs::Bool msg;
       msg.data = checkFlatness();
-      pub_land_.publish(msg);
+      if (ros::Time::now().toSec() - takeoff_start_time > k_landed_wait_time)
+      	pub_land_.publish(msg);
     }
   } // void lrfCallback(...)
 
@@ -140,10 +145,11 @@ namespace toland
 
     // create response message
     res.success = is_sucess;
-    res.message = std::string("number of measurements: %d", imu_data_buffer_.size());
+    res.message = "number of measurements: " + std::to_string(imu_data_buffer_.size());
 
     // setup request takeof
     f_reqested_to = is_sucess;
+    takeoff_start_time = ros::Time::now().toSec();
 
     // return sucessfull execution
     return true;
@@ -151,13 +157,14 @@ namespace toland
 
   bool FlightDetector::checkFlatness()
   {
-    // Return if buffer is empty
-      if (imu_data_buffer_.empty())
-          return false;
+    ROS_DEBUG("checkFlatness called");
 
-      // Return if minimum window is not reached
-      if ((imu_data_buffer_.end()->timestamp - imu_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
-        return false;
+    // Return if buffer is empty
+      if (imu_data_buffer_.empty()) 
+      {
+          ROS_WARN("Imu buffer emtpy.");
+          return false;
+      }
 
       // return if last measurement is older than minimum window time
       if (ros::Time::now().toSec() - imu_data_buffer_.end()->timestamp > k_sensor_readings_window_s_)
@@ -165,6 +172,7 @@ namespace toland
         // also reset the buffer in this case
         imu_data_buffer_.clear();
         f_have_imu_ = false;
+        ROS_WARN("IMU odlert than minimum time");
         return false;
       }
 
@@ -213,10 +221,14 @@ namespace toland
 
       // Compare roll and pitch with thresholds
       if (abs(eul_ang(0)) > k_angle_threshold_deg_ || abs(eul_ang(1)) > k_angle_threshold_deg_)
-        return false;
+      {
+          ROS_WARN("Attidue over threshold:\n\troll:  %f\n\tpitch: %f", abs(eul_ang(0)), abs(eul_ang(1)));
+          return false;
+      }
 
       // test passed, reset flag
       f_have_imu_ = false;
+      ROS_DEBUG("we are flat:\n\troll:  %f\n\tpitch: %f", abs(eul_ang(0)), abs(eul_ang(1)));
       return true;
   }  // bool checkFlatness()
 
@@ -227,8 +239,8 @@ namespace toland
           return false;
 
       // Return if minimum window is not reached
-      if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
-        return false;
+      //if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
+      //  return false;
 
       // return if last measurement is older than minimum window time
       if (ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp > k_sensor_readings_window_s_)
@@ -261,6 +273,7 @@ namespace toland
 
       // test passed, reset flag
       f_have_lrf_ = false;
+      ROS_DEBUG("we are grounded:\n\tdistance: %f", r_P(2));
       return true;
   } // bool checkLanded()
 

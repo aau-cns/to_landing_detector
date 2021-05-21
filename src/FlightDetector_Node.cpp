@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "toland_flight");
 
   // set logging level
-  if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Warn))
+  if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
     ros::console::notifyLoggerLevelsChanged();
 
   // initilize FlightDetector
