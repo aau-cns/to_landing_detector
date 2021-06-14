@@ -50,6 +50,19 @@ namespace toland
             "No LRF topic defined, using " << lrf_topic << std::endl);
     }
 
+    // print parameter summary
+    ROS_INFO_STREAM("Parameter summary as loaded by toland"
+                    << "\n\tsensor_readings_window [s]: " << k_sensor_readings_window_s_
+                    << "\n\tangle_threshold [deg]:      " << k_angle_threshold_deg_
+                    << "\n\tdistance_threshold [m]:     " << k_distance_threshold_m_
+                    << "\n\ttakeoff_theshold [m]:       " << k_takeoff_threshold_m_
+                    << "\n\tlrf_use_median [bool]:      " << k_lrf_use_median_
+                    << "\n\timu_topic [string]:         " << imu_topic
+                    << "\n\tlrf_topic [string]:         " << lrf_topic
+                    << std::endl;
+                    );
+    // TODO(scm): missing debug information on vectors loaded
+
     // setup subscribers
     sub_imu_ = nh_.subscribe(imu_topic, 1, &FlightDetector::imuCallback, this);
     sub_lrf_ = nh_.subscribe(lrf_topic, 1, &FlightDetector::lrfCallback, this);

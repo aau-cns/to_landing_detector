@@ -13,6 +13,9 @@
   <arg name="sensor_readings_window"  default="1.0" />
   <arg name="angle_threshold"         default="10.0" />
   <arg name="distance_threshold"      default="0.15" />
+  <arg name="takeoff_theshold"        default="0.5" />
+  <arg name="lrf_use_median"          default="false" />
+
 
   <node name="toland" pkg="toland_flight" type="toland_node" output="screen" respawn="true" clear_params="true">
     <!-- rostopic strings -->
@@ -23,6 +26,8 @@
     <param name="sensor_readings_window"  type="double" value="$(arg sensor_readings_window)" />
     <param name="angle_threshold"         type="double" value="$(arg angle_threshold)" />
     <param name="distance_threshold"      type="double" value="$(arg distance_threshold)" />
+    <param name="takeoff_theshold"        type="double" value="$(arg takeoff_theshold)" />
+    <param name="lrf_use_median"          type="bool"   value="$(arg lrf_use_median)" />
 
     <!-- calibration parameters -->
     <rosparam param="R_PI" subst_value="true">$(arg R_IP)</rosparam>
