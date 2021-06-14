@@ -31,6 +31,8 @@ namespace toland
     nh_.param<std::vector<double>>("R_LP", k_R_PL, k_R_PL);
     // Get LRF-Platform translation
     nh_.param<std::vector<double>>("t_LP", k_t_PL, k_t_PL);
+    // Get LRF distance calculation method
+    nh_.param<bool>("lrf_use_median", k_lrf_use_median_, k_lrf_use_median_);
 
     // topic strings
     std::string imu_topic, lrf_topic;
@@ -291,19 +293,56 @@ namespace toland
     }
 
     // Define mean range
-    double range_mean = 0.0;
+    double range = 0.0;
+    size_t num_meas = lrf_data_buffer_.size();
 
-
-
-    // Calculate the mean acceleration and the mean angular velocity
-    for (auto &it : lrf_data_buffer_)
+    // check if using median or mean
+    if (k_lrf_use_median_)
     {
-      range_mean += it.range;
+      // median calculations
+
+      // create vector with range measurements
+      std::vector<double> lrf_ranges;
+      for (auto &it : lrf_data_buffer_)
+      {
+        lrf_ranges.push_back(it.range);
+      }
+
+      // derive the median of vector using n-th element
+      // see also https://www.geeksforgeeks.org/finding-median-of-unsorted-array-in-linear-time-using-c-stl/
+      if (num_meas % 2 == 0)
+      {
+        // even vector size
+        nth_element(lrf_ranges.begin(), lrf_ranges.begin() + num_meas/2, lrf_ranges.end());
+        nth_element(lrf_ranges.begin(), lrf_ranges.begin() + (num_meas-1)/2, lrf_ranges.end());
+
+        // value is mean of idexed elements (N/2) & (N-1/2)
+        range = (double)(lrf_ranges[(num_meas - 1)/2] + lrf_ranges[num_meas/2])/ 2.0;
+      }
+      else
+      {
+        // odd vector size
+        nth_element(lrf_ranges.begin(), lrf_ranges.begin() + num_meas/2, lrf_ranges.end());
+
+        // value is mean of idexed elements (N/2) & (N-1/2)
+        range = (double)lrf_ranges[num_meas/2];
+      }
+
     }
-    range_mean = range_mean/lrf_data_buffer_.size();
+    else
+    {
+      // mean calculations
+
+      // calculate the mean acceleration and the mean range
+      for (auto &it : lrf_data_buffer_)
+      {
+        range += it.range;
+      }
+      range = range/lrf_data_buffer_.size();
+    }
 
     // create vector with range in z direction (as defined per LRF)
-    Eigen::Vector3d r_L(0,0,range_mean);
+    Eigen::Vector3d r_L(0,0,range);
 
     // apply transformation between the lrf and the platform
     Eigen::Vector3d r_P = utils::math::Rot(k_R_PL)*r_L + utils::math::Vec(k_t_PL);
