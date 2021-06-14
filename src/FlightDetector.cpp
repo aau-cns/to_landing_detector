@@ -23,6 +23,8 @@ namespace toland
     nh_.param<double>("angle_threshold", k_angle_threshold_deg_, k_angle_threshold_deg_);
     // Get distance threshold for platform landing check
     nh_.param<double>("distance_threshold", k_distance_threshold_m_, k_distance_threshold_m_);
+    // Get takeoff threshold for platform landing check
+    nh_.param<double>("takeoff_theshold", k_takeoff_threshold_m_, k_takeoff_threshold_m_);
     // Get IMU-Platform rotation
     nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
     // Get LRF-Platform rotation
@@ -126,13 +128,29 @@ namespace toland
     f_have_lrf_ = true;
 
     // publish landed message if below threshold
-    if (f_reqested_to && checkLanded())
+    if (f_reqested_to)
     {
-      // setup message
-      std_msgs::Bool msg;
-      msg.data = checkFlatness();
-      if (ros::Time::now().toSec() - takeoff_start_time > k_landed_wait_time)
-      	pub_land_.publish(msg);
+      // check if we have taken off successfully (> threshold)
+      if (f_successful_to)
+      {
+        // setup message
+        std_msgs::Bool msg;
+        msg.data = checkFlatness();
+        pub_land_.publish(msg);
+
+        // unset flags
+        f_successful_to = false;
+        // f_requested_to = false;
+      }
+      else
+      {
+        // check wether takeoff distance is reached
+        if (calculateDistance() > k_takeoff_threshold_m_)
+        {
+          f_successful_to = true;
+          ROS_DEBUG("Successfully taken off.");
+        }
+      }
     }
   } // void lrfCallback(...)
 
@@ -238,46 +256,60 @@ namespace toland
 
   bool FlightDetector::checkLanded()
   {
-    // Return if buffer is empty
-      if (lrf_data_buffer_.empty())
-          return false;
+      double range = calculateDistance();
 
-      // Return if minimum window is not reached
-      //if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
-      //  return false;
-
-      // return if last measurement is older than minimum window time
-      if ((ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp) > k_sensor_readings_window_s_)
-      {
-        // also reset the buffer in this case
-        lrf_data_buffer_.clear();
-        ROS_WARN("LRF older than window time");
-        f_have_lrf_ = false;
+      // check if range is valid
+      if (range < 0.0)
         return false;
-      }
-
-      // Define mean range
-      double range_mean = 0.0;
-
-      // Calculate the mean acceleration and the mean angular velocity
-      for (auto &it : lrf_data_buffer_)
-      {
-        range_mean += it.range;
-      }
-      range_mean = range_mean/lrf_data_buffer_.size();
-
-      // create vector with range in z direction (as defined per LRF)
-      Eigen::Vector3d r_L(0,0,range_mean);
-
-      // apply transformation between the lrf and the platform
-      Eigen::Vector3d r_P = utils::math::Rot(k_R_PL)*r_L + utils::math::Vec(k_t_PL);
 
       // check distance to ground with threshold
-      if (r_P(2) > k_distance_threshold_m_ || r_P(2) < 0)
+      if (range > k_distance_threshold_m_ || range < 0)
         return false;
 
-      ROS_DEBUG("we are grounded:\n\tdistance: %f", r_P(2));
+      ROS_DEBUG("we are grounded:\n\tdistance: %f", range);
       return true;
   } // bool checkLanded()
+
+  double FlightDetector::calculateDistance()
+  {
+    // Return if buffer is empty
+    if (lrf_data_buffer_.empty())
+      return -1.0;
+
+    // Return if minimum window is not reached
+    //if ((lrf_data_buffer_.end()->timestamp - lrf_data_buffer_.begin()->timestamp) < k_sensor_readings_window_s_)
+    //  return false;
+
+    // return if last measurement is older than minimum window time
+    if ((ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp) > k_sensor_readings_window_s_)
+    {
+      // also reset the buffer in this case
+      lrf_data_buffer_.clear();
+      ROS_WARN("LRF older than window time");
+      f_have_lrf_ = false;
+      return -1.0;
+    }
+
+    // Define mean range
+    double range_mean = 0.0;
+
+
+
+    // Calculate the mean acceleration and the mean angular velocity
+    for (auto &it : lrf_data_buffer_)
+    {
+      range_mean += it.range;
+    }
+    range_mean = range_mean/lrf_data_buffer_.size();
+
+    // create vector with range in z direction (as defined per LRF)
+    Eigen::Vector3d r_L(0,0,range_mean);
+
+    // apply transformation between the lrf and the platform
+    Eigen::Vector3d r_P = utils::math::Rot(k_R_PL)*r_L + utils::math::Vec(k_t_PL);
+
+    // return distance in z direction
+    return r_P(2);
+  }  // double calculateDistance()
 
 } // namespace toland

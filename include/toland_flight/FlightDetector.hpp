@@ -49,18 +49,21 @@ namespace toland
     double takeoff_start_time {0.0};
 
     /// ROS Static Parameters
-    double k_sensor_readings_window_s_ {1.0};
-    double k_angle_threshold_deg_ {10.0};
-    double k_distance_threshold_m_ {0.1};
+    double k_sensor_readings_window_s_ {1.0};                     //!< buffer time
+    double k_angle_threshold_deg_ {10.0};                         //!< threshold for gravity direction in [deg]
+    double k_distance_threshold_m_ {0.1};                         //!< threshold for distance in [m]
+    double k_takeoff_threshold_m_ {0.5};                          //!< threshold for takeoff in [m]
     std::vector<double> k_R_IP = {1,0,0,0,1,0,0,0,1};
     std::vector<double> k_R_PL = {1,0,0,0,1,0,0,0,1};
     std::vector<double> k_t_PL = {0,0,0};
     double k_landed_wait_time = {30.0};
+    bool k_lrf_use_median_ = {false};                             //!< determines if the LRF distance calculations use median or mean
 
     /// Internal Flags
     std::atomic<bool> f_have_imu_ {false};
     std::atomic<bool> f_have_lrf_ {false};
     std::atomic<bool> f_reqested_to {false};
+    std::atomic<bool> f_successful_to {false};
 
     /// ROS Callback Functions
 
@@ -99,6 +102,13 @@ namespace toland
     /// \author Martin Scheiber
     ///
     bool checkLanded();
+
+    ///
+    /// \brief calculateDistance calculates the median distance given by the LRF measurements
+    /// \return
+    /// \author Martin Scheiber
+    ///
+    double calculateDistance();
 
 public:
     FlightDetector();
