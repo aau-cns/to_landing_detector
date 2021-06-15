@@ -148,19 +148,24 @@ namespace toland
       // check if we have taken off successfully (> threshold)
       if (f_successful_to)
       {
-        // setup message
-        std_msgs::Bool msg;
-        msg.data = checkFlatness();
-        pub_land_.publish(msg);
+        if (checkLanded())
+        {
+          // setup message
+          std_msgs::Bool msg;
+          msg.data = checkFlatness();
+          pub_land_.publish(msg);
 
-        // unset flags
-        f_successful_to = false;
-        // f_requested_to = false;
+          // unset flags
+          f_successful_to = false;
+          // f_requested_to = false;
+        }
       }
       else
       {
         // check wether takeoff distance is reached
-        if (calculateDistance() > k_takeoff_threshold_m_)
+        double dist = calculateDistance();
+//        ROS_INFO_STREAM("reached distance: " << dist << std::endl);
+        if (dist > k_takeoff_threshold_m_)
         {
           f_successful_to = true;
           ROS_DEBUG("Successfully taken off.");
@@ -199,11 +204,11 @@ namespace toland
     ROS_DEBUG("checkFlatness called");
 
     // Return if buffer is empty
-      if (imu_data_buffer_.empty()) 
-      {
-          ROS_WARN("Imu buffer emtpy.");
-          return false;
-      }
+//      if (imu_data_buffer_.empty()) 
+//      {
+//          ROS_WARN("Imu buffer emtpy.");
+//          return false;
+//      }
 
       // return if last measurement is older than minimum window time
       if ((ros::Time::now().toSec() - imu_data_buffer_.end()->timestamp) > k_sensor_readings_window_s_)
@@ -296,15 +301,15 @@ namespace toland
     //  return false;
 
     // return if last measurement is older than minimum window time
-    if ((ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp) > k_sensor_readings_window_s_)
-    {
-      // also reset the buffer in this case
-      lrf_data_buffer_.clear();
-      ROS_WARN("LRF older than window time");
-      f_have_lrf_ = false;
-      return -1.0;
-    }
-
+//    if ((ros::Time::now().toSec() - lrf_data_buffer_.end()->timestamp) > k_sensor_readings_window_s_)
+//    {
+//      // also reset the buffer in this case
+//      lrf_data_buffer_.clear();
+//      ROS_WARN("LRF older than window time");
+//      f_have_lrf_ = false;
+//      return -1.0;
+//    }
+//
     // Define mean range
     double range = 0.0;
     size_t num_meas = lrf_data_buffer_.size();
