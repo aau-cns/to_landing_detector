@@ -1,4 +1,4 @@
-/// Copyright (C) 2021 Martin Scheiber, Control of Networked Systems, University of Klagenfurt, Austria.
+/// Copyright (C) 2021-2022 Martin Scheiber, Control of Networked Systems, University of Klagenfurt, Austria.
 ///
 /// All rights reserved.
 ///
@@ -9,9 +9,10 @@
 /// You can contact the author at <martin.scheiber@ieee.org>
 
 #include <ros/ros.h>
+
 #include "toland_flight/FlightDetector.hpp"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   // initialize ros
   ros::init(argc, argv, "toland_flight");
@@ -28,19 +29,18 @@ int main(int argc, char *argv[])
   ros::this_node::getSubscribedTopics(topics);
   std::string nodeName = ros::this_node::getName();
   std::string topicsStr = nodeName + ":\n\tsubscribed to topics:\n";
-  for(unsigned int i=0; i<topics.size(); i++)
-    topicsStr+=("\t\t" + topics.at(i) + "\n");
+  for (unsigned int i = 0; i < topics.size(); i++)
+    topicsStr += ("\t\t" + topics.at(i) + "\n");
 
   topicsStr += "\tadvertised topics:\n";
   ros::this_node::getAdvertisedTopics(topics);
-  for(unsigned int i=0; i<topics.size(); i++)
-    topicsStr+=("\t\t" + topics.at(i) + "\n");
+  for (unsigned int i = 0; i < topics.size(); i++)
+    topicsStr += ("\t\t" + topics.at(i) + "\n");
 
-  ROS_INFO_STREAM(""<< topicsStr);
+  ROS_INFO_STREAM("" << topicsStr);
 
   // spin ROS
   ros::spin();
 
   return EXIT_SUCCESS;
-
 }

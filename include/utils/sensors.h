@@ -1,4 +1,4 @@
-/// Copyright (C) 2021 Martin Scheiber, Alessandro Fornasier, and others,
+/// Copyright (C) 2021-2022 Martin Scheiber, Alessandro Fornasier, and others,
 /// Control of Networked Systems, Universitaet Klagenfurt, Austria
 ///
 /// All rights reserved.
@@ -13,45 +13,45 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include <vector>
 #include <Eigen/Eigen>
+#include <vector>
 
 namespace utils
 {
-  namespace sensors
+namespace sensors
+{
+///
+/// \brief The sensorData struct is a interface for sensor data structures.
+/// \note This structure only implements operators for comparision reasons
+///
+struct sensorData
+{
+  double timestamp;
+
+  /// Sort function to allow for using of STL containers
+  bool operator<(const sensorData& other) const
   {
-    ///
-    /// \brief The sensorData struct is a interface for sensor data structures.
-    /// \note This structure only implements operators for comparision reasons
-    ///
-    struct sensorData
-    {
-      double timestamp;
-
-      /// Sort function to allow for using of STL containers
-      bool operator<(const sensorData& other) const {
-          return timestamp < other.timestamp;
-      }
-    };
-
-    ///
-    /// \brief The imuData struct
-    ///
-    struct imuData : sensorData
-    {
-        Eigen::Matrix<double, 3, 1> wm;     //!<  Gyroscope reading, angular velocity (rad/s)
-        Eigen::Matrix<double, 3, 1> am;     //!< Accelerometer reading, linear acceleration (m/s^2)
-    };
-
-    ///
-    /// \brief The lrfData struct
-    ///
-    struct lrfData : sensorData
-    {
-      double range;                         //!< Range reading, distance (m)
-    };
+    return timestamp < other.timestamp;
   }
-}
+};
 
+///
+/// \brief The imuData struct
+///
+struct imuData : sensorData
+{
+  Eigen::Matrix<double, 3, 1> wm;  //!<  Gyroscope reading, angular velocity (rad/s)
+  Eigen::Matrix<double, 3, 1> am;  //!< Accelerometer reading, linear acceleration (m/s^2)
+};
+
+///
+/// \brief The lrfData struct
+///
+struct lrfData : sensorData
+{
+  double range;  //!< Range reading, distance (m)
+};
+}  // namespace sensors
+}  // namespace utils
 
 #endif  // SENSORS_H
