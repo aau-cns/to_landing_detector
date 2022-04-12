@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added namespaces for flatness detection (utils) from AMAZE autonomy.
 - Updated license headers in utils module.
 
-[Feature 4]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/6d04815b
+[Feature 4]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/0f58d100
 [Feature 3]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/6d04815b
 [Feature 2]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/68994fe4
 [Feature 1]: https://gitlab.aau.at/aau-cns/ros_pkgs/toland_flight/-/tree/07ee025c

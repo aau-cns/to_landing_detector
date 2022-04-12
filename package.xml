@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>toland_flight</name>
-  <version>1.0.1</version>
+  <version>1.0.0</version>
   <description>The toland_flight package that checks if a UAV is flat on the ground.</description>
 
   <!-- MAINTAINERS -->
