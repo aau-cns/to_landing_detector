@@ -155,6 +155,7 @@ set(
 set(
     HEADER_FILES
     include/utils/mathematics.h
+    include/utils/physics.h
     include/utils/sensors.h
     include/toland_flight/FlightDetector.hpp
 )

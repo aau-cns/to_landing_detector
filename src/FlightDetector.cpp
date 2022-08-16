@@ -1,14 +1,14 @@
-/// Copyright (C) 2022 Martin Scheiber, Alessandro Fornasier,
-/// Control of Networked Systems, University of Klagenfurt, Austria.
-///
-/// All rights reserved.
-///
-/// This software is licensed under the terms of the BSD-2-Clause-License with
-/// no commercial use allowed, the full terms of which are made available
-/// in the LICENSE file. No license in patents is granted.
-///
-/// You can contact the author at <martin.scheiber@ieee.org>
-/// <alessandro.fornasier@ieee.org>
+// Copyright (C) 2022 Martin Scheiber, Alessandro Fornasier,
+// Control of Networked Systems, University of Klagenfurt, Austria.
+//
+// All rights reserved.
+//
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the authors at <martin.scheiber@ieee.org> and
+// <alessandro.fornasier@ieee.org>.
 
 #include "toland_flight/FlightDetector.hpp"
 
@@ -143,7 +143,8 @@ void FlightDetector::baroCallback(const sensor_msgs::FluidPressure::ConstPtr& ms
   BaroData_t meas;
   meas.timestamp = msg->header.stamp.toSec();
   meas.p = msg->fluid_pressure;  // Pascal
-  meas.h = ((r_ * T_) / (M_ * g_)) * (log(P0_) - log(meas.p));
+  meas.h = utils::physics::rTOverMg_ *
+           (std::log(ref_pressure_) - std::log(meas.p));
 
   // Push measurement into buffer
   baro_data_buffer_.emplace_back(meas);
@@ -407,13 +408,118 @@ bool FlightDetector::initializeP0()
       {
         p0 += it.p;
       }
-      P0_ = p0 / baro_data_buffer_.size();
+      ref_pressure_ = p0 / baro_data_buffer_.size();
       f_have_P0_ = true;
     }
   }
 
   return f_have_P0_;
 
-}  // bool initializeP0
+}  // bool initializeP0()
+
+template <typename T>
+bool FlightDetector::removeOldestWindow(const T meas, std::vector<T> buffer)
+{
+  // Type cross-check
+  if constexpr (!(std::is_same_v<T, ImuData_t> || std::is_same_v<T, LrfData_t> || std::is_same_v<T, BaroData_t>))
+  {
+    return false;
+  }
+  else
+  {
+    // Remove oldest if sensor reading window width is reached
+    if ((meas.timestamp - buffer.begin()->timestamp) > k_sensor_readings_window_s_)
+    {
+      // Get first time to be kept (timestamp of the first element within the specified window)
+      double Dt = meas.timestamp - k_sensor_readings_window_s_;
+
+      // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
+      auto it = std::find_if(buffer.begin(), buffer.end(), [&Dt](T meas) { return meas.timestamp >= Dt; });
+
+      // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
+      if (it != buffer.begin())
+      {
+        buffer.erase(buffer.begin(), it);
+      }
+    }
+    return true;
+  }
+}  // <T> bool removeOldestWindow(...)
+
+template <typename T>
+double FlightDetector::medianRange(const std::vector<T> buffer)
+{
+  // Define meadin range
+  double range = 0.0;
+  size_t num_meas = buffer.size();
+
+  // create vector with range measurements
+  std::vector<double> ranges;
+  for (auto& it : buffer)
+  {
+    // Get ranges
+    if constexpr (std::is_same_v<T, LrfData_t>)
+    {
+      ranges.push_back(it.range);
+    }
+    else if constexpr (std::is_same_v<T, BaroData_t>)
+    {
+      ranges.push_back(it.h);
+    }
+    else
+    {
+      return -1.0;
+    }
+  }
+
+  // derive the median of vector using n-th element
+  // see also https://www.geeksforgeeks.org/finding-median-of-unsorted-array-in-linear-time-using-c-stl/
+  if (num_meas % 2 == 0)
+  {
+    // even vector size
+    nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
+    nth_element(ranges.begin(), ranges.begin() + (num_meas - 1) / 2, ranges.end());
+
+    // value is mean of idexed elements (N/2) & (N-1/2)
+    range = (double)(ranges[(num_meas - 1) / 2] + ranges[num_meas / 2]) / 2.0;
+  }
+  else
+  {
+    // odd vector size
+    nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
+
+    // value is mean of idexed elements (N/2) & (N-1/2)
+    range = (double)ranges[num_meas / 2];
+  }
+
+  return range;
+}
+
+template <typename T>
+double FlightDetector::meanRange(const std::vector<T> buffer)
+{
+  // Define mean range
+  double range = 0.0;
+
+  // calculate the mean acceleration and the mean range
+  for (auto& it : buffer)
+  {
+    if constexpr (std::is_same_v<T, LrfData_t>)
+    {
+      range += it.range;
+    }
+    else if constexpr (std::is_same_v<T, BaroData_t>)
+    {
+      range += it.h;
+    }
+    else
+    {
+      return -1.0;
+    }
+  }
+  range = range / buffer.size();
+
+  return range;
+}
 
 }  // namespace toland

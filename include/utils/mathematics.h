@@ -1,14 +1,14 @@
-/// Copyright (C) 2022 Christian Brommer and Alessandro Fornasier,
-/// Control of Networked Systems, University of Klagenfurt, Austria
-///
-/// All rights reserved.
-///
-/// This software is licensed under the terms of the BSD-2-Clause-License with
-/// no commercial use allowed, the full terms of which are made available
-/// in the LICENSE file. No license in patents is granted.
-///
-/// You can contact the authors at <christian.brommer@ieee.org>
-/// and <alessandro.fornasier@ieee.org>
+// Copyright (C) 2022 Christian Brommer and Alessandro Fornasier,
+// Control of Networked Systems, University of Klagenfurt, Austria
+//
+// All rights reserved.
+//
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the authors at <christian.brommer@ieee.org> and
+// and <alessandro.fornasier@ieee.org>.
 
 #ifndef MATHEMATICS_H
 #define MATHEMATICS_H

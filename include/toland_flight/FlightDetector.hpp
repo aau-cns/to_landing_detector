@@ -1,13 +1,14 @@
-/// Copyright (C) 2022 Martin Scheiber, Alessandro Fornasier,
-/// Control of Networked Systems, University of Klagenfurt, Austria.
-///
-/// All rights reserved.
-///
-/// This software is licensed under the terms of the BSD-2-Clause-License with
-/// no commercial use allowed, the full terms of which are made available
-/// in the LICENSE file. No license in patents is granted.
-///
-/// You can contact the author at <martin.scheiber@ieee.org>
+// Copyright (C) 2022 Martin Scheiber, Alessandro Fornasier,
+// Control of Networked Systems, University of Klagenfurt, Austria.
+//
+// All rights reserved.
+//
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the authors at <martin.scheiber@ieee.org> and
+// <alessandro.fornasier@ieee.org>.
 
 #ifndef FLIGHTDETECTOR_HPP
 #define FLIGHTDETECTOR_HPP
@@ -22,6 +23,7 @@
 #include <type_traits>
 
 #include "utils/mathematics.h"
+#include "utils/physics.h"
 #include "utils/sensors.h"
 
 namespace toland
@@ -85,12 +87,8 @@ private:
   std::atomic<bool> f_successful_to{ false };  //!< flag to determine if takeoff has succeeded
   Sensor sensor_{ Sensor::UNDEFINED };
 
-  /// Barometric constants
-  double M_ = 0.0289644;  // Kg*mol
-  double r_ = 8.31432;    // Nm/mol*K
-  double g_ = 9.80665;    // m/s^2
-  double T_ = 298.15;     // K
-  double P0_ = 0.0;       // Pascal
+  /// Barometer Parameters
+  double ref_pressure_{ 0.0 };  //!< barometric reference pressure at ground level (default 0 Pa)
 
   /// ROS Callback Functions
 
@@ -157,128 +155,32 @@ private:
   bool initializeP0();
 
   ///
-  /// \brief  remove entries oldest than newest timestmap - specified window
-  /// \param  measurement
+  /// \brief  Remove entries older than (newest - specified window)
+  /// \param  meas
   /// \param  buffer
   /// \return bool if succesfull
   /// \author Alessandro Fornasier
   ///
   template <typename T>
-  inline bool removeOldestWindow(const T meas, std::vector<T> buffer)
-  {
-    // Type cross-check
-    if constexpr (!(std::is_same_v<T, ImuData_t> || std::is_same_v<T, LrfData_t> || std::is_same_v<T, BaroData_t>))
-    {
-      return false;
-    }
-    else
-    {
-      // Remove oldest if sensor reading window width is reached
-      if ((meas.timestamp - buffer.begin()->timestamp) > k_sensor_readings_window_s_)
-      {
-        // Get first time to be kept (timestamp of the first element within the specified window)
-        double Dt = meas.timestamp - k_sensor_readings_window_s_;
-
-        // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
-        auto it = std::find_if(buffer.begin(), buffer.end(), [&Dt](T meas) { return meas.timestamp >= Dt; });
-
-        // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
-        if (it != buffer.begin())
-        {
-          buffer.erase(buffer.begin(), it);
-        }
-      }
-      return true;
-    }
-  }
+  bool removeOldestWindow(const T meas, std::vector<T> buffer);
 
   ///
-  /// \brief  Get the median range from sensor reading
-  /// \param  measurement
-  /// \return double range
-  /// \author Alessandro Fornasier
+  /// \brief  Get the median range from buffer
+  /// \param  buffer buffer to get the median range from
+  /// \return double median range
+  /// \author Alessandro Fornasier, Martin Scheiber
   ///
   template <typename T>
-  inline double medianRange(const std::vector<T> buffer)
-  {
-    // Define meadin range
-    double range = 0.0;
-    size_t num_meas = buffer.size();
-
-    // create vector with range measurements
-    std::vector<double> ranges;
-    for (auto& it : buffer)
-    {
-      // Get ranges
-      if constexpr (std::is_same_v<T, LrfData_t>)
-      {
-        ranges.push_back(it.range);
-      }
-      else if constexpr (std::is_same_v<T, BaroData_t>)
-      {
-        ranges.push_back(it.h);
-      }
-      else
-      {
-        return -1.0;
-      }
-    }
-
-    // derive the median of vector using n-th element
-    // see also https://www.geeksforgeeks.org/finding-median-of-unsorted-array-in-linear-time-using-c-stl/
-    if (num_meas % 2 == 0)
-    {
-      // even vector size
-      nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
-      nth_element(ranges.begin(), ranges.begin() + (num_meas - 1) / 2, ranges.end());
-
-      // value is mean of idexed elements (N/2) & (N-1/2)
-      range = (double)(ranges[(num_meas - 1) / 2] + ranges[num_meas / 2]) / 2.0;
-    }
-    else
-    {
-      // odd vector size
-      nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
-
-      // value is mean of idexed elements (N/2) & (N-1/2)
-      range = (double)ranges[num_meas / 2];
-    }
-
-    return range;
-  }
+  double medianRange(const std::vector<T> buffer);
 
   ///
-  /// \brief  Get the mean range from sensor reading
-  /// \param  measurement
-  /// \return double range
-  /// \author Alessandro Fornasier
+  /// \brief  Get the mean range from buffer
+  /// \param  buffer vector to get the mean range from
+  /// \return double mean range
+  /// \author Alessandro Fornasier, Martin Scheiber
   ///
   template <typename T>
-  inline double meanRange(const std::vector<T> buffer)
-  {
-    // Define mean range
-    double range = 0.0;
-
-    // calculate the mean acceleration and the mean range
-    for (auto& it : buffer)
-    {
-      if constexpr (std::is_same_v<T, LrfData_t>)
-      {
-        range += it.range;
-      }
-      else if constexpr (std::is_same_v<T, BaroData_t>)
-      {
-        range += it.h;
-      }
-      else
-      {
-        return -1.0;
-      }
-    }
-    range = range / buffer.size();
-
-    return range;
-  }
+  double meanRange(const std::vector<T> buffer);
 
 public:
   FlightDetector();
