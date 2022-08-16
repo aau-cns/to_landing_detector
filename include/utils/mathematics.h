@@ -1,5 +1,5 @@
-/// Copyright (C) 2021-2022 Christian Brommer and Alessandro Fornasier,
-/// Control of Networked Systems, Universitaet Klagenfurt, Austria
+/// Copyright (C) 2022 Christian Brommer and Alessandro Fornasier,
+/// Control of Networked Systems, University of Klagenfurt, Austria
 ///
 /// All rights reserved.
 ///

@@ -1,4 +1,5 @@
-/// Copyright (C) 2021-2022 Martin Scheiber, Control of Networked Systems, University of Klagenfurt, Austria.
+/// Copyright (C) 2022 Martin Scheiber, Alessandro Fornasier,
+/// Control of Networked Systems, University of Klagenfurt, Austria.
 ///
 /// All rights reserved.
 ///
@@ -12,11 +13,12 @@
 #define FLIGHTDETECTOR_HPP
 
 #include <ros/ros.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/Range.h>
 #include <std_msgs/Bool.h>
-#include <sensor_msgs/FluidPressure.h>
 #include <std_srvs/Trigger.h>
+
 #include <type_traits>
 
 #include "utils/mathematics.h"
@@ -24,19 +26,21 @@
 
 namespace toland
 {
-
 ///
 /// @brief Sensor used as height measurement source
 ///
-enum Sensor {UNDEFINED = 0, LRF = 1, BARO = 2};
-
+enum Sensor
+{
+  UNDEFINED = 0,
+  LRF = 1,
+  BARO = 2
+};
 
 ///
 /// \brief The FlightDetector class
 ///
 class FlightDetector
 {
-
 private:
   typedef utils::sensors::imuData ImuData_t;
   typedef utils::sensors::lrfData LrfData_t;
@@ -44,50 +48,49 @@ private:
 
 private:
   /// ROS NODE HANDLES
-  ros::NodeHandle nh_;                                          //!< ROS Nodehandle
+  ros::NodeHandle nh_;  //!< ROS Nodehandle
 
   /// ROS Subscribers
-  ros::Subscriber sub_imu_;                                     //!< IMU topic subscriber
-  ros::Subscriber sub_lrf_;                                     //!< LRF topic subscriber
-  ros::Subscriber sub_baro_;                                     //!< BARO topic subscriber
+  ros::Subscriber sub_imu_;   //!< IMU topic subscriber
+  ros::Subscriber sub_lrf_;   //!< LRF topic subscriber
+  ros::Subscriber sub_baro_;  //!< BARO topic subscriber
 
-  ros::ServiceServer srv_to_;                                   //!< Takeoff service
+  ros::ServiceServer srv_to_;  //!< Takeoff service
 
-  ros::Publisher pub_land_;                                     //!< publishes
+  ros::Publisher pub_land_;  //!< publishes
 
   /// Measurement buffers
-  std::vector<ImuData_t> imu_data_buffer_;                      //!< buffer for IMU measurements
-  std::vector<LrfData_t> lrf_data_buffer_;                      //!< buffer for LRF measurements
-  std::vector<BaroData_t> baro_data_buffer_;                    //!< buffer for BARO measurements
-  double takeoff_start_time {0.0};
+  std::vector<ImuData_t> imu_data_buffer_;    //!< buffer for IMU measurements
+  std::vector<LrfData_t> lrf_data_buffer_;    //!< buffer for LRF measurements
+  std::vector<BaroData_t> baro_data_buffer_;  //!< buffer for BARO measurements
+  double takeoff_start_time{ 0.0 };
 
   /// ROS Static Parameters
-  double k_sensor_readings_window_s_ {1.0};                     //!< buffer time
-  double k_angle_threshold_deg_ {10.0};                         //!< threshold for gravity direction in [deg]
-  double k_distance_threshold_m_ {0.1};                         //!< threshold for distance in [m]
-  double k_takeoff_threshold_m_ {0.5};                          //!< threshold for takeoff in [m]
-  std::vector<double> k_R_IP = {1,0,0,0,1,0,0,0,1};
-  std::vector<double> k_R_PL = {1,0,0,0,1,0,0,0,1};
-  std::vector<double> k_t_PL = {0,0,0};
-  double k_landed_wait_time = {30.0};
-  bool k_use_median_ = {false};                             //!< determines if the SENSOR distance calculations use median or mean
+  double k_sensor_readings_window_s_{ 1.0 };  //!< buffer time
+  double k_angle_threshold_deg_{ 10.0 };      //!< threshold for gravity direction in [deg]
+  double k_distance_threshold_m_{ 0.1 };      //!< threshold for distance in [m]
+  double k_takeoff_threshold_m_{ 0.5 };       //!< threshold for takeoff in [m]
+  std::vector<double> k_R_IP = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  std::vector<double> k_R_PL = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  std::vector<double> k_t_PL = { 0, 0, 0 };
+  double k_landed_wait_time = { 30.0 };
+  bool k_use_median_ = { false };  //!< determines if the SENSOR distance calculations use median or mean
 
   /// Internal Flags
-  std::atomic<bool> f_have_imu_ {false};
-  std::atomic<bool> f_have_lrf_ {false};
-  std::atomic<bool> f_have_baro_ {false};
-  std::atomic<bool> f_have_P0_ {false};
-  std::atomic<bool> f_reqested_to {false};
-  std::atomic<bool> f_successful_to {false};
-  Sensor sensor_ {Sensor::UNDEFINED};
+  std::atomic<bool> f_have_imu_{ false };      //!< flag to determine if IMU measurement was received
+  std::atomic<bool> f_have_lrf_{ false };      //!< flag to determine if LRF measurement was received
+  std::atomic<bool> f_have_baro_{ false };     //!< flag to determine if baro measurement was received
+  std::atomic<bool> f_have_P0_{ false };       //!< flag to determine if baro was initialized
+  std::atomic<bool> f_reqested_to{ false };    //!< flag to determine if takeoff has been requested (once)
+  std::atomic<bool> f_successful_to{ false };  //!< flag to determine if takeoff has succeeded
+  Sensor sensor_{ Sensor::UNDEFINED };
 
   /// Barometric constants
-  double M_ = 0.0289644;            //Kg*mol
-  double r_ = 8.31432;              //Nm/mol*K
-  double g_ = 9.80665;              //m/s^2
-  double T_ = 298.15;               //K
-  double P0_ = 0.0;                 //Pascal
-
+  double M_ = 0.0289644;  // Kg*mol
+  double r_ = 8.31432;    // Nm/mol*K
+  double g_ = 9.80665;    // m/s^2
+  double T_ = 298.15;     // K
+  double P0_ = 0.0;       // Pascal
 
   /// ROS Callback Functions
 
@@ -160,7 +163,8 @@ private:
   /// \return bool if succesfull
   /// \author Alessandro Fornasier
   ///
-  template<typename T> inline bool removeOldestWindow(const T meas, std::vector<T> buffer)
+  template <typename T>
+  inline bool removeOldestWindow(const T meas, std::vector<T> buffer)
   {
     // Type cross-check
     if constexpr (!(std::is_same_v<T, ImuData_t> || std::is_same_v<T, LrfData_t> || std::is_same_v<T, BaroData_t>))
@@ -176,7 +180,7 @@ private:
         double Dt = meas.timestamp - k_sensor_readings_window_s_;
 
         // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
-        auto it = std::find_if(buffer.begin(), buffer.end(), [&Dt](T meas){return meas.timestamp >= Dt;});
+        auto it = std::find_if(buffer.begin(), buffer.end(), [&Dt](T meas) { return meas.timestamp >= Dt; });
 
         // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
         if (it != buffer.begin())
@@ -194,7 +198,8 @@ private:
   /// \return double range
   /// \author Alessandro Fornasier
   ///
-  template<typename T> inline double medianRange(const std::vector<T> buffer)
+  template <typename T>
+  inline double medianRange(const std::vector<T> buffer)
   {
     // Define meadin range
     double range = 0.0;
@@ -202,7 +207,7 @@ private:
 
     // create vector with range measurements
     std::vector<double> ranges;
-    for (auto &it : buffer)
+    for (auto& it : buffer)
     {
       // Get ranges
       if constexpr (std::is_same_v<T, LrfData_t>)
@@ -224,19 +229,19 @@ private:
     if (num_meas % 2 == 0)
     {
       // even vector size
-      nth_element(ranges.begin(), ranges.begin() + num_meas/2, ranges.end());
-      nth_element(ranges.begin(), ranges.begin() + (num_meas-1)/2, ranges.end());
+      nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
+      nth_element(ranges.begin(), ranges.begin() + (num_meas - 1) / 2, ranges.end());
 
       // value is mean of idexed elements (N/2) & (N-1/2)
-      range = (double)(ranges[(num_meas - 1)/2] + ranges[num_meas/2])/ 2.0;
+      range = (double)(ranges[(num_meas - 1) / 2] + ranges[num_meas / 2]) / 2.0;
     }
     else
     {
       // odd vector size
-      nth_element(ranges.begin(), ranges.begin() + num_meas/2, ranges.end());
+      nth_element(ranges.begin(), ranges.begin() + num_meas / 2, ranges.end());
 
       // value is mean of idexed elements (N/2) & (N-1/2)
-      range = (double)ranges[num_meas/2];
+      range = (double)ranges[num_meas / 2];
     }
 
     return range;
@@ -248,14 +253,14 @@ private:
   /// \return double range
   /// \author Alessandro Fornasier
   ///
-  template<typename T> inline double meanRange(const std::vector<T> buffer)
+  template <typename T>
+  inline double meanRange(const std::vector<T> buffer)
   {
-
     // Define mean range
     double range = 0.0;
 
     // calculate the mean acceleration and the mean range
-    for (auto &it : buffer)
+    for (auto& it : buffer)
     {
       if constexpr (std::is_same_v<T, LrfData_t>)
       {
@@ -270,10 +275,9 @@ private:
         return -1.0;
       }
     }
-    range = range/buffer.size();
+    range = range / buffer.size();
 
     return range;
-
   }
 
 public:
