@@ -38,6 +38,22 @@ enum Sensor
   BARO = 2
 };
 
+inline std::ostream& operator<<(std::ostream& os, Sensor sensor)
+{
+  switch (sensor)
+  {
+    case Sensor::LRF:
+      return os << "LRF";
+    case Sensor::BARO:
+      return os << "BARO";
+    case Sensor::UNDEFINED:
+    default:
+      return os << "UNDEFINED";
+  }
+
+  return os;
+}
+
 ///
 /// \brief The FlightDetector class
 ///
@@ -77,6 +93,7 @@ private:
   std::vector<double> k_t_PL = { 0, 0, 0 };
   double k_landed_wait_time = { 30.0 };
   bool k_use_median_ = { false };  //!< determines if the SENSOR distance calculations use median or mean
+  bool k_is_playback_{ false };    //!< determines if a playback is active (used for debugging)
 
   /// Internal Flags
   std::atomic<bool> f_have_imu_{ false };      //!< flag to determine if IMU measurement was received
@@ -162,7 +179,7 @@ private:
   /// \author Alessandro Fornasier
   ///
   template <typename T>
-  bool removeOldestWindow(const T meas, std::vector<T> buffer);
+  bool removeOldestWindow(const T meas, std::vector<T>* const buffer);
 
   ///
   /// \brief  Get the median range from buffer

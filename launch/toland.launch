@@ -4,6 +4,7 @@
   <arg name="imu_topic" default="/imu" />   <!-- Mandatory -->
   <arg name="lrf_topic" default="/lrf" />   <!-- LRF is used as primary sensor, if toic is undefined it will fallback to baro -->
   <arg name="baro_topic" default="/baro" /> <!-- BARO used if LRF is not defined -->
+  <arg name="default_sensor" default="lrf" />
 
   <!-- calibration parameters -->
   <arg name="R_IP"      default="[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]" />
@@ -16,13 +17,15 @@
   <arg name="distance_threshold"      default="0.15" />
   <arg name="takeoff_theshold"        default="0.5" />
   <arg name="use_median"              default="false" />
+  <arg name="playback"                default="false" />
 
 
   <node name="toland" pkg="toland_flight" type="toland_node" output="screen" respawn="true" clear_params="true">
     <!-- rostopic strings -->
     <param name="imu_topic"               type="string" value="$(arg imu_topic)" />
     <param name="lrf_topic"               type="string" value="$(arg lrf_topic)" />
-    <param name="baro_topic"               type="string" value="$(arg baro_topic)" />
+    <param name="baro_topic"              type="string" value="$(arg baro_topic)" />
+    <param name="default_sensor"          type="string" value="$(arg default_sensor)" />
 
     <!-- observation parameters -->
     <param name="sensor_readings_window"  type="double" value="$(arg sensor_readings_window)" />
@@ -30,6 +33,7 @@
     <param name="distance_threshold"      type="double" value="$(arg distance_threshold)" />
     <param name="takeoff_theshold"        type="double" value="$(arg takeoff_theshold)" />
     <param name="use_median"              type="bool"   value="$(arg use_median)" />
+    <param name="playback"                type="bool"   value="$(arg playback)" />
 
     <!-- calibration parameters -->
     <rosparam param="R_PI" subst_value="true">$(arg R_IP)</rosparam>
