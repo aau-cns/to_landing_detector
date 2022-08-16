@@ -188,7 +188,7 @@ private:
   /// \author Alessandro Fornasier, Martin Scheiber
   ///
   template <typename T>
-  double medianRange(const std::vector<T> buffer);
+  double medianRange(const std::vector<T>& buffer);
 
   ///
   /// \brief  Get the mean range from buffer
@@ -197,7 +197,7 @@ private:
   /// \author Alessandro Fornasier, Martin Scheiber
   ///
   template <typename T>
-  double meanRange(const std::vector<T> buffer);
+  double meanRange(const std::vector<T>& buffer);
 
 public:
   FlightDetector();

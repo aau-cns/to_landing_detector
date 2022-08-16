@@ -147,6 +147,7 @@ void FlightDetector::lrfCallback(const sensor_msgs::Range::ConstPtr& msg)
 
   // set lrf flag
   f_have_lrf_ = true;
+  ROS_DEBUG_STREAM("*   add lrf-height:  " << meas.range);
 
   // publish landed message if below threshold
   publishLanded();
@@ -180,6 +181,7 @@ void FlightDetector::baroCallback(const sensor_msgs::FluidPressure::ConstPtr& ms
 
   // set baro flag
   f_have_baro_ = true;
+  ROS_DEBUG_STREAM("*   add baro-height: " << meas.h);
 
   // publish landed message if below threshold
   publishLanded();
@@ -188,6 +190,8 @@ void FlightDetector::baroCallback(const sensor_msgs::FluidPressure::ConstPtr& ms
 
 bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
+  ROS_DEBUG_STREAM("> checking TO condition");
+
   // check for flatness and if LRF present if we are landed
   bool is_sucess = f_have_imu_ && checkFlatness();
   if (is_sucess && (f_have_lrf_ || f_have_baro_))
@@ -203,9 +207,8 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   }
 
   // create response message
-  std::string res_msg = std::string("number of measurements -- IMU: ") +
-                        std::to_string(imu_data_buffer_.size()) + std::string(" -- LRF: ") +
-                        std::to_string(lrf_data_buffer_.size()) + std::string(" -- BARO: ") +
+  std::string res_msg = std::string("number of measurements -- IMU: ") + std::to_string(imu_data_buffer_.size()) +
+                        std::string(" -- LRF: ") + std::to_string(lrf_data_buffer_.size()) + std::string(" -- BARO: ") +
                         std::to_string(baro_data_buffer_.size());
   res.success = is_sucess;
   res.message = res_msg;
@@ -213,6 +216,14 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   // setup request takeof
   f_reqested_to = is_sucess;
   takeoff_start_time = ros::Time::now().toSec();
+
+#ifndef NDEBUG
+  // only perform this in debug mode
+  if (is_sucess)
+    ROS_DEBUG_STREAM("> TO request SUCCESSFUL");
+  else
+    ROS_DEBUG_STREAM("> TO request FAILED");
+#endif  // NDBEUG
 
   // return sucessfull execution
   return true;
@@ -358,14 +369,21 @@ double FlightDetector::calculateDistance()
   {
     // Return if buffer is empty
     if (baro_data_buffer_.empty())
+    {
+      ROS_DEBUG_STREAM(">   no measurements in buffer yet.");
       return -1.0;
+    }
 
-    // Return if minimum window is not reached
-    if ((baro_data_buffer_.back().timestamp - baro_data_buffer_.front().timestamp) < k_sensor_readings_window_s_)
-      return false;
+    // Return if minimum window is not reached (use 80% of ideal window to allow success for lower rate sensors)
+    if ((baro_data_buffer_.back().timestamp - baro_data_buffer_.front().timestamp) < 0.8 * k_sensor_readings_window_s_)
+    {
+      ROS_DEBUG_STREAM(">   not enough measurements in buffer yet.");
+      return -1.0;
+    }
 
     // return if last measurement is older than minimum window time
-    if (!k_is_playback_ && (ros::Time::now().toSec() - baro_data_buffer_.back().timestamp) > k_sensor_readings_window_s_)
+    if (!k_is_playback_ &&
+        (ros::Time::now().toSec() - baro_data_buffer_.back().timestamp) > k_sensor_readings_window_s_)
     {
       // also reset the buffer in this case
       baro_data_buffer_.clear();
@@ -386,6 +404,7 @@ double FlightDetector::calculateDistance()
     {
       range = meanRange<BaroData_t>(baro_data_buffer_);
     }
+
     // return distance in z direction
     return range;
   }
@@ -400,6 +419,8 @@ void FlightDetector::publishLanded()
   // publish landed message if below threshold
   if (f_reqested_to)
   {
+    ROS_DEBUG_STREAM("> checking if LANDED");
+
     // check if we have taken off successfully (> threshold)
     if (f_successful_to)
     {
@@ -419,7 +440,8 @@ void FlightDetector::publishLanded()
     {
       // check wether takeoff distance is reached
       double dist = calculateDistance();
-      //        ROS_INFO_STREAM("reached distance: " << dist << std::endl);
+      ROS_DEBUG_STREAM("> reached TO distance: " << dist);
+
       if (dist > k_takeoff_threshold_m_)
       {
         f_successful_to = true;
@@ -491,7 +513,7 @@ bool FlightDetector::removeOldestWindow(const T meas, std::vector<T>* const buff
 }  // <T> bool removeOldestWindow(...)
 
 template <typename T>
-double FlightDetector::medianRange(const std::vector<T> buffer)
+double FlightDetector::medianRange(const std::vector<T>& buffer)
 {
   // Define meadin range
   double range = 0.0;
@@ -536,11 +558,12 @@ double FlightDetector::medianRange(const std::vector<T> buffer)
     range = (double)ranges[num_meas / 2];
   }
 
+  ROS_DEBUG_STREAM("= median range: " << range);
   return range;
 }
 
 template <typename T>
-double FlightDetector::meanRange(const std::vector<T> buffer)
+double FlightDetector::meanRange(const std::vector<T>& buffer)
 {
   // Define mean range
   double range = 0.0;
@@ -563,6 +586,7 @@ double FlightDetector::meanRange(const std::vector<T> buffer)
   }
   range = range / buffer.size();
 
+  ROS_DEBUG_STREAM("= mean range:   " << range);
   return range;
 }
 

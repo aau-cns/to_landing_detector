@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(toland_flight)
 
+## Determine CMAKE options
+#set(CMAKE_BUILD_TYPE "Release")
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 ## Try to compile with newer versions of C++
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -16,10 +22,15 @@ else()
     message(WARNING "The compiler ${CMAKE_CXX_COMPILER} has no C++0x support. Please use a different C++ compiler.")
 endif()
 
-## enforcing cleaner code by adding -Wall and -Werror, the compiler will not ignore warnings anymore
-add_definitions(-Wall -Werror)
+## Set CMAKE compile flags
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized -Wmaybe-uninitialized -fno-omit-frame-pointer")
+endif ()
 
 ## Display compiler flags
+message("Build Type: " ${CMAKE_BUILD_TYPE})
 message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")
 
 

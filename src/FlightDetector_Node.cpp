@@ -18,12 +18,25 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "toland_flight");
 
   // set logging level
+#ifdef NDEBUG
+  // nondebug
   if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info))
+  {
     ros::console::notifyLoggerLevelsChanged();
+  }
+#else
+  // debug
+  if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+  {
+    ros::console::notifyLoggerLevelsChanged();
+  }
+#endif
+
 
   // initilize FlightDetector
   toland::FlightDetector flight_detector;
 
+#ifndef NDEBUG
   //  print published/subscribed topics
   ros::V_string topics;
   ros::this_node::getSubscribedTopics(topics);
@@ -37,7 +50,8 @@ int main(int argc, char* argv[])
   for (unsigned int i = 0; i < topics.size(); i++)
     topicsStr += ("\t\t" + topics.at(i) + "\n");
 
-  ROS_INFO_STREAM("" << topicsStr);
+  ROS_DEBUG_STREAM("" << topicsStr);
+#endif
 
   // spin ROS
   ros::spin();
