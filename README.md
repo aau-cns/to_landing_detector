@@ -1,4 +1,4 @@
-# CNS Flightstack: Takeoff and Land ROS1 Package (toland_flight)
+# CNS Flight Stack: Takeoff and Land ROS1 Package (toland_flight)
 
 [![License](https://img.shields.io/badge/License-AAUCNS-green.svg)](./LICENSE)
 
@@ -13,20 +13,21 @@ If you use this software in an academic research setting, please cite the
 corresponding paper and consult the `LICENSE` file for a detailed explanation.
 
 ```latex
-@inproceedings{cns_flightstack22,
+@inproceedings{cns_flight_stack22,
    author   = {Martin Scheiber and Alessandro Fornasier and Roland Jung and Christoph Boehm and Rohit Dhakate
                and Christian Stewart and Jan Steinbrener and Stephan Weiss and Christian Brommer},
-   journal  = {under review},
-   title    = {Flight Stack for Reproducible and Customizable Autonomy Applications in Research and Industry},
+   journal  = {IEEE Robotics and Automation Letters},
+   title    = {CNS Flight Stack for Reproducible, Customizable, and Fully Autonomous Applications},
    year     = {2022},
+   doi      = {10.1109/LRA.2022.3196117}
 }
 ```
 
 ## Getting Started
 
 ### Prerequesites
-This package is part of the [CNS FlightStack] and thus depends on the other packages of the flightstack:
-- [CNS FlightStack: Autonomy Engine]
+This package is part of the [CNS Flight Stack] and thus depends on the other packages of the flight stack:
+- [CNS Flight Stack: Autonomy Engine]
 
 
 Further the following libraries are required
@@ -45,7 +46,7 @@ catkin build toland_flight
 
 ## Usage
 
-The intended usage is together with the [CNS FlightStack: Autonomy Engine], which will interact with the takeoff and landing detector. Use the provided launchfile to start the ROS1 node
+The intended usage is together with the [CNS Flight Stack: Autonomy Engine], which will interact with the takeoff and landing detector. Use the provided launchfile to start the ROS1 node
 
 ```bash
 roslaunch toland_flight toland.launch
@@ -96,7 +97,7 @@ If required the detector can be used without the [CNS FlightStack: Autonomy Engi
 rosservice call /toland/service/takeoff "{}"
 # Feedback:
 success: False|True
-message: "number of measurements: n"
+message: "number of measurements -- IMU: x -- LRF: x -- BARO: x"
 ```
 
 If this service was called once, you will receive a message on the `/toland/is_landed` topic, if a landing was detected. In order for this to happen, the UAV must have taken off successfully (`dist>takeoff_theshold`). Please note that for this feature a **range sensor must be used**.
@@ -108,10 +109,15 @@ Please refer to the academic paper for further insights of the Takeoff and Landi
 
 ## Known Issues
 
-#### Landing Detction Message only transmitted once
+#### Landing Detection Message only transmitted once
 The current implementation only transmits a landing detection message once. There it does not check for flatness (as it should not). However, when you then request via the provided service if the vehicle is on the ground, it might return `false` as the flatness (gravity-aligned) condition might not be met.
 
-We are working on this issue, which requires modification also on the [CNS Flightstack: Autonomy Engine] - see also issue #2.
+We are working on this issue, which requires modification also on the [CNS Flight Stack: Autonomy Engine] - see also issue #2.
+
+#### Barometer triggers landing detection early
+This is due to inaccurate barometric measurements (especially indoors) before flight. The current initialization routine sets the reference pressure at startup using the mean of the first 100 measurements. If between startup external influences (even start of the motors) would change the reference pressure, technically a restart of the node is currently required.
+
+This issue is also WIP, but can be circumvent by using a more accurate AGL sensor.
 
 ## Package Layout
 
@@ -120,12 +126,14 @@ We are working on this issue, which requires modification also on the [CNS Fligh
 .
 |-- CHANGELOG.md
 |-- CMakeLists.txt
+|-- CMakeLists.txt.user
 |-- CONTRIBUTORS.md
 |-- include
 |   |-- toland_flight
 |   |   `-- FlightDetector.hpp
 |   `-- utils
 |       |-- mathematics.h
+|       |-- physics.h
 |       `-- sensors.h
 |-- launch
 |   `-- toland.launch
@@ -144,5 +152,5 @@ You can contact the authors at [martin.scheiber@aau.at](mailto:martin.scheiber@a
 
 
 <!-- LINKS: -->
-[CNS FlightStack]: http://sst.aau.at/cns
-[CNS FlightStack: Autonomy Engine]: http://sst.aau.at/cns
+[CNS Flight Stack]: https://github.com/aau-cns/flight_stack
+[CNS Flight Stack: Autonomy Engine]: https://github.com/aau-cns/autonomy_engine

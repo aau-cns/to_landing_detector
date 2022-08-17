@@ -453,12 +453,12 @@ void FlightDetector::publishLanded()
 
 bool FlightDetector::initializeP0()
 {
-  // Very naive initialization of P0 by averaging the first 20
+  // Very naive initialization of P0 by averaging the first 100
   // measurements before takeoff
   // TODO(anyone): make it better
   if (!(f_have_P0_ || f_successful_to))
   {
-    if (baro_data_buffer_.size() > 20)
+    if (baro_data_buffer_.size() > 100)
     {
       double p0 = 0.0;
       for (auto& it : baro_data_buffer_)
