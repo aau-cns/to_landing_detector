@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(toland_flight)
+project(to_landing_detector)
 
 ## Determine CMAKE options
 #set(CMAKE_BUILD_TYPE "Release")

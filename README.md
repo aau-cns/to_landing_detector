@@ -1,4 +1,4 @@
-# CNS Flight Stack: Takeoff and Land ROS1 Package (toland_flight)
+# CNS Flight Stack: Takeoff and Land ROS1 Package (to_landing_detector)
 
 [![License](https://img.shields.io/badge/License-AAUCNS-green.svg)](./LICENSE)
 
@@ -41,7 +41,7 @@ Further the following libraries are required
 As this is a ROS package, please build it within the catkin environment with
 
 ```bash
-catkin build toland_flight
+catkin build to_landing_detector
 ```
 
 ## Usage
@@ -49,7 +49,7 @@ catkin build toland_flight
 The intended usage is together with the [CNS Flight Stack: Autonomy Engine], which will interact with the takeoff and landing detector. Use the provided launchfile to start the ROS1 node
 
 ```bash
-roslaunch toland_flight toland.launch
+roslaunch to_landing_detector toland.launch
 ```
 
 The following parameters can be set to modify the detector's behavior:
@@ -122,11 +122,10 @@ This issue is also WIP, but can be circumvent by using a more accurate AGL senso
 ## Package Layout
 
 ```console
-/path/to/toland_flight$ tree -L 3 --noreport --charset unicode
+/path/to/to_landing_detector$ tree -L 3 --noreport --charset unicode
 .
 |-- CHANGELOG.md
 |-- CMakeLists.txt
-|-- CMakeLists.txt.user
 |-- CONTRIBUTORS.md
 |-- include
 |   |-- toland_flight

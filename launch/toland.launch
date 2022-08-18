@@ -20,7 +20,7 @@
   <arg name="playback"                default="false" />
 
 
-  <node name="toland" pkg="toland_flight" type="toland_node" output="screen" respawn="true" clear_params="true">
+  <node name="toland_detector" pkg="to_landing_detector" type="toland_node" output="screen" respawn="true" clear_params="true">
     <!-- rostopic strings -->
     <param name="imu_topic"               type="string" value="$(arg imu_topic)" />
     <param name="lrf_topic"               type="string" value="$(arg lrf_topic)" />
