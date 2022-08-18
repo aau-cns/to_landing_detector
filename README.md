@@ -126,7 +126,6 @@ This issue is also WIP, but can be circumvent by using a more accurate AGL senso
 .
 |-- CHANGELOG.md
 |-- CMakeLists.txt
-|-- CONTRIBUTORS.md
 |-- include
 |   |-- toland_flight
 |   |   `-- FlightDetector.hpp
