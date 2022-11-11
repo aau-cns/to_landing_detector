@@ -14,7 +14,7 @@
 
 namespace toland
 {
-FlightDetector::FlightDetector() : nh_("toland")
+FlightDetector::FlightDetector() : nh_("toland_detector")
 {
   // read general parameters
   // Get sensor reading window

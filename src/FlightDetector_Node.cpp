@@ -15,7 +15,7 @@
 int main(int argc, char* argv[])
 {
   // initialize ros
-  ros::init(argc, argv, "toland_flight");
+  ros::init(argc, argv, "toland_detector");
 
   // set logging level
 #ifdef NDEBUG
