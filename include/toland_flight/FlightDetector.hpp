@@ -34,14 +34,17 @@ namespace toland
 enum Sensor
 {
   UNDEFINED = 0,
-  LRF = 1,
-  BARO = 2
+  DISABLED = 1,
+  LRF = 2,
+  BARO = 3,
 };
 
 inline std::ostream& operator<<(std::ostream& os, Sensor sensor)
 {
   switch (sensor)
   {
+    case Sensor::DISABLED:
+      return os << "DISABLED";
     case Sensor::LRF:
       return os << "LRF";
     case Sensor::BARO:

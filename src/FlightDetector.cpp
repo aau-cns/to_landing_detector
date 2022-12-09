@@ -47,7 +47,9 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   }
   else
   {
-    if (default_sensor == "lrf")
+    if (default_sensor == "disabled")
+      sensor_ = Sensor::DISABLED;
+    else if (default_sensor == "lrf")
       sensor_ = Sensor::LRF;
     else if (default_sensor == "baro")
       sensor_ = Sensor::BARO;
@@ -194,7 +196,7 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
 
   // check for flatness and if LRF present if we are landed
   bool is_sucess = f_have_imu_ && checkFlatness();
-  if (is_sucess && (f_have_lrf_ || f_have_baro_))
+  if (is_sucess && (f_have_lrf_ || f_have_baro_ || sensor_ == Sensor::DISABLED))
   {
     is_sucess = checkLanded();
   }
@@ -306,6 +308,13 @@ bool FlightDetector::checkFlatness()
 
 bool FlightDetector::checkLanded()
 {
+  // return true of distance sensor is disabled
+  if (sensor_ == Sensor::DISABLED)
+  {
+    ROS_DEBUG("distance sensor is disabled, thus we are always grounded");
+    return true;
+  }
+
   double range = calculateDistance();
 
   // check if range is valid

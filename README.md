@@ -1,6 +1,9 @@
 # CNS Flight Stack: Takeoff and Land ROS1 Package (to_landing_detector)
 
-[![License](https://img.shields.io/badge/License-AAUCNS-green.svg)](./LICENSE)
+<!-- [![Release](https://img.shields.io/github/v/release/aau-cns/flight_stack?logo=github)](https://github.com/aau-cns/flight_stack/releases) -->
+[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE) [![Paper](https://img.shields.io/badge/IEEEXplore-10.1109/LRA.2022.3196117-00629B.svg?logo=ieee)](https://doi.org/10.1109/LRA.2022.3196117)
+
+Maintainer: [Martin Scheiber](mailto:martin.scheiber@aau.at)
 
 ## License
 This software is made available to the public to use (_source-available_),
@@ -13,13 +16,16 @@ If you use this software in an academic research setting, please cite the
 corresponding paper and consult the `LICENSE` file for a detailed explanation.
 
 ```latex
-@inproceedings{cns_flight_stack22,
-   author   = {Martin Scheiber and Alessandro Fornasier and Roland Jung and Christoph Boehm and Rohit Dhakate
-               and Christian Stewart and Jan Steinbrener and Stephan Weiss and Christian Brommer},
-   journal  = {IEEE Robotics and Automation Letters},
-   title    = {CNS Flight Stack for Reproducible, Customizable, and Fully Autonomous Applications},
-   year     = {2022},
-   doi      = {10.1109/LRA.2022.3196117}
+@article{cns_flightstack22,
+    title        = {CNS Flight Stack for Reproducible, Customizable, and Fully Autonomous Applications},
+    author       = {Scheiber, Martin and Fornasier, Alessandro and Jung, Roland and Böhm, Christoph and Dhakate, Rohit and Stewart, Christian and Steinbrener, Jan and Weiss, Stephan and Brommer, Christian},
+    journal      = {IEEE Robotics and Automation Letters},
+    volume       = {7},
+    number       = {4},
+    year         = {2022},
+    doi          = {10.1109/LRA.2022.3196117},
+    url          = {https://ieeexplore.ieee.org/document/9849131},
+    pages        = {11283--11290}
 }
 ```
 
@@ -58,6 +64,7 @@ The following parameters can be set to modify the detector's behavior:
 
 | ROS parameter | description | default value |
 |---------------|-------------|---------------|
+| `default_sensor`          | default AGL sensor to use | `lrf` |
 | `sensor_readings_window`  | time window used for buffering messages to calculate median/mean when checking takeoff/landing condition | `1.0` |
 | `angle_threshold`         | threshold in [deg] acceptable as flat (gravity-aligned check) | `10.0` |
 | `distance_threshold`      | threshold in [m] acceptable as on the ground (height check) | `0.1` |
@@ -68,6 +75,7 @@ The following parameters can be set to modify the detector's behavior:
 | `lrf_use_median`          | automatic state changes in sequencer (if used without Autonomy Engine) | `false` |
 | `imu_topic`               | ROS topic name for the IMU measurements | `/imu` |
 | `lrf_topic`               | ROS topic name for the range measurements | `/lrf` |
+| `baro_topic`              | ROS topic name for the barometric measurements | `/baro` |
 
 ### Default Launchfile Parameters
 
@@ -78,8 +86,10 @@ roslaunch toland_flight toland.launch <PARAM1_NAME>:=<VALUE> <PARAM2_NAME>:=<VAL
 
 | Launch parameter | description | default value |
 |---------------|-------------|---------------|
+| `default_sensor`          | default AGL sensor to use (`lrf`, `baro`, or `disabled`) | `lrf` |
 | `imu_topic`               | ROS topic name for the IMU measurements  | `/imu` |
 | `lrf_topic`               | ROS topic name for the range measurements  | `/lrf` |
+| `baro_topic`               | ROS topic name for the barometric measurements  | `/baro` |
 | `R_IP`                    | rotation calibration between IMU and "body" frame | Identity Matrix |
 | `R_PL`                    | rotation calibration between "body" frame and range sensor | Identity Matrix |
 | `t_PL`                    | translation calibration between "body" frame and range sensor | Zero Vector |
