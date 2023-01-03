@@ -1,15 +1,14 @@
 # CNS Flight Stack: Takeoff and Land ROS1 Package (to_landing_detector)
 
-<!-- [![Release](https://img.shields.io/github/v/release/aau-cns/flight_stack?logo=github)](https://github.com/aau-cns/flight_stack/releases) -->
-[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE) [![Paper](https://img.shields.io/badge/IEEEXplore-10.1109/LRA.2022.3196117-00629B.svg?logo=ieee)](https://doi.org/10.1109/LRA.2022.3196117)
+ [![Release](https://img.shields.io/github/v/release/aau-cns/to_landing_detector?include_prereleases&logo=github)](https://github.com/aau-cns/to_landing_detector/releases) [![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE) [![Paper](https://img.shields.io/badge/IEEEXplore-10.1109/LRA.2022.3196117-00629B.svg?logo=ieee)](https://doi.org/10.1109/LRA.2022.3196117)
 
-Maintainer: [Martin Scheiber](mailto:martin.scheiber@aau.at)
+Maintainer: [Martin Scheiber](mailto:martin.scheiber@aau.at) and [Alessandro Fornasier](mailto:alessandro.fornasier@aau.at)
+
+## Credit
+This code was written by the [Control of Networked System (CNS)](https://www.aau.at/en/smart-systems-technologies/control-of-networked-systems/), University of Klagenfurt, Klagenfurt, Austria.
 
 ## License
-This software is made available to the public to use (_source-available_),
-licensed under the terms of the BSD-2-Clause-License with no commercial use
-allowed, the full terms of which are made available in the `LICENSE` file.
-No license in patents is granted.
+This software is made available to the public to use (_source-available_), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the `LICENSE` file. No license in patents is granted.
 
 ### Usage for academic purposes
 If you use this software in an academic research setting, please cite the
@@ -122,7 +121,7 @@ Please refer to the academic paper for further insights of the Takeoff and Landi
 #### Landing Detection Message only transmitted once
 The current implementation only transmits a landing detection message once. There it does not check for flatness (as it should not). However, when you then request via the provided service if the vehicle is on the ground, it might return `false` as the flatness (gravity-aligned) condition might not be met.
 
-We are working on this issue, which requires modification also on the [CNS Flight Stack: Autonomy Engine] - see also issue #2.
+We are working on this issue, which requires modification also on the [CNS Flight Stack: Autonomy Engine].
 
 #### Barometer triggers landing detection early
 This is due to inaccurate barometric measurements (especially indoors) before flight. The current initialization routine sets the reference pressure at startup using the mean of the first 100 measurements. If between startup external influences (even start of the motors) would change the reference pressure, technically a restart of the node is currently required.
@@ -155,8 +154,8 @@ This issue is also WIP, but can be circumvent by using a more accurate AGL senso
 
 ---
 
-Copyright (C) 2021-2022 Martin Scheiber and Alessandro Fornasier, Control of Networked Systems, University of Klagenfurt, Austria.
-You can contact the authors at [martin.scheiber@aau.at](mailto:martin.scheiber@aau.at?subject=toland_flight%20package), [alessandro.fornasier@aau.at](mailto:alessandro.fornasier@aau.at?subject=toland_flight%20package).
+Copyright (C) 2021-2023 Alessandro Fornasier and Martin Scheiber, Control of Networked Systems, University of Klagenfurt, Austria.
+You can contact the authors at [alessandro.fornasier@aau.at](mailto:alessandro.fornasier@aau.at?subject=[CNS%20Flight%20Stack]%20to_landing_detector%20package), [martin.scheiber@aau.at](mailto:martin.scheiber@aau.at?subject=[CNS%20Flight%20Stack]%20to_landing_detector%20package).
 
 
 <!-- LINKS: -->
