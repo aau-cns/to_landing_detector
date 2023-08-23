@@ -73,9 +73,9 @@ The following parameters can be set to modify the detector's behavior:
 | `t_LP`                    | translation calibration between "body" frame and range sensor | Zero Vector |
 | `use_median`              | use the median rather than the mean for LRF-based caluclation | `false` |
 | `require_srv_call`        | require a service call before any takeoff is detected | `false` |
-| `imu_topic`               | ROS topic name for the IMU measurements | `/imu` |
-| `lrf_topic`               | ROS topic name for the range measurements | `/lrf` |
-| `baro_topic`              | ROS topic name for the barometric measurements | `/baro` |
+| `imu_topic`               | ROS topic name for the IMU measurements | `~imu` |
+| `lrf_topic`               | ROS topic name for the range measurements | `~lrf` |
+| `baro_topic`              | ROS topic name for the barometric measurements | `~baro` |
 
 ### Default Launchfile Parameters
 
@@ -87,9 +87,9 @@ roslaunch toland_flight toland.launch <PARAM1_NAME>:=<VALUE> <PARAM2_NAME>:=<VAL
 | Launch parameter | description | default value |
 |---------------|-------------|---------------|
 | `default_sensor`          | default AGL sensor to use (`lrf`, `baro`, or `disabled`) | `lrf` |
-| `imu_topic`               | ROS topic name for the IMU measurements  | `/imu` |
-| `lrf_topic`               | ROS topic name for the range measurements  | `/lrf` |
-| `baro_topic`              | ROS topic name for the barometric measurements  | `/baro` |
+| `imu_topic`               | ROS topic name for the IMU measurements  | `~imu` |
+| `lrf_topic`               | ROS topic name for the range measurements  | `~lrf` |
+| `baro_topic`              | ROS topic name for the barometric measurements  | `~baro` |
 | `R_IP`                    | rotation calibration between IMU and "body" frame | Identity Matrix |
 | `R_PL`                    | rotation calibration between "body" frame and range sensor | Identity Matrix |
 | `t_PL`                    | translation calibration between "body" frame and range sensor | Zero Vector |

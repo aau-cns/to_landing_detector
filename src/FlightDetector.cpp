@@ -26,11 +26,11 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   // Get takeoff threshold for platform landing check
   nh_.param<double>("takeoff_theshold", k_takeoff_threshold_m_, k_takeoff_threshold_m_);
   // Get IMU-Platform rotation
-  nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
+  nh_.param<std::vector<double>>("R_IP", k_R_IP_, k_R_IP_);
   // Get LRF-Platform rotation
-  nh_.param<std::vector<double>>("R_LP", k_R_PL, k_R_PL);
+  nh_.param<std::vector<double>>("R_LP", k_R_PL_, k_R_PL_);
   // Get LRF-Platform translation
-  nh_.param<std::vector<double>>("t_LP", k_t_PL, k_t_PL);
+  nh_.param<std::vector<double>>("t_LP", k_t_PL_, k_t_PL_);
   // Get distance calculation method
   nh_.param<bool>("use_median", k_use_median_, k_use_median_);
   // Get distance calculation method
@@ -66,12 +66,12 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   // read topic parameters
   if (!nh_.getParam("imu_topic", imu_topic))
   {
-    imu_topic = "/imu";
+    imu_topic = "imu";
     ROS_WARN_STREAM("No IMU topic defined, using " << imu_topic << std::endl);
   }
   if (!nh_.getParam("lrf_topic", lrf_topic))
   {
-    lrf_topic = "/lrf";
+    lrf_topic = "lrf";
     ROS_WARN_STREAM("No LRF topic defined" << std::endl);
   }
   else
@@ -83,7 +83,7 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   }
   if (!nh_.getParam("baro_topic", baro_topic))
   {
-    baro_topic = "/baro";
+    baro_topic = "baro";
     ROS_WARN_STREAM("No BARO topic defined" << std::endl);
   }
   else
@@ -122,8 +122,8 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
 
   // update 'f_requested_to' based on requirement to servicec call
-  f_reqested_to = !k_require_srv_;
-  takeoff_start_time = ros::Time::now().toSec();
+  f_reqested_to_ = !k_require_srv_;
+  takeoff_start_time_ = ros::Time::now().toSec();
 }  // FlightDetector()
 
 void FlightDetector::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -226,8 +226,8 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   res.message = res_msg;
 
   // setup request takeof
-  f_reqested_to = !k_require_srv_ || is_sucess;
-  takeoff_start_time = ros::Time::now().toSec();
+  f_reqested_to_ = !k_require_srv_ || is_sucess;
+  takeoff_start_time_ = ros::Time::now().toSec();
 
 #ifndef NDEBUG
   // only perform this in debug mode
@@ -300,7 +300,7 @@ bool FlightDetector::checkFlatness()
   R_GI.block(0, 2, 3, 1) = z_axis;
 
   // Apply Rotation between the imu and the platform
-  Eigen::Matrix3d R_GP = R_GI * utils::math::Rot(k_R_IP);
+  Eigen::Matrix3d R_GP = R_GI * utils::math::Rot(k_R_IP_);
 
   // Convert Rotation matrix to euler angles
   Eigen::Vector3d eul_ang = utils::math::eul(R_GP);
@@ -379,7 +379,7 @@ double FlightDetector::calculateDistance()
     Eigen::Vector3d r_L(0, 0, range);
 
     // apply transformation between the lrf and the platform
-    Eigen::Vector3d r_P = utils::math::Rot(k_R_PL) * r_L + utils::math::Vec(k_t_PL);
+    Eigen::Vector3d r_P = utils::math::Rot(k_R_PL_) * r_L + utils::math::Vec(k_t_PL_);
 
     // return distance in z direction
     return r_P(2);
@@ -436,12 +436,12 @@ double FlightDetector::calculateDistance()
 void FlightDetector::publishLanded()
 {
   // publish landed message if below threshold
-  if (f_reqested_to)
+  if (f_reqested_to_)
   {
     ROS_DEBUG_STREAM("> checking if LANDED");
 
     // check if we have taken off successfully (> threshold)
-    if (f_successful_to)
+    if (f_successful_to_)
     {
       if (checkLanded())
       {
@@ -451,7 +451,7 @@ void FlightDetector::publishLanded()
         pub_land_.publish(msg);
 
         // unset flags
-        f_successful_to = false;
+        f_successful_to_ = false;
         // f_requested_to = false;
       }
     }
@@ -468,7 +468,7 @@ void FlightDetector::publishLanded()
         msg.data = true;  // INFO(scm): no real information to set here atm
         pub_to_.publish(msg);
 
-        f_successful_to = true;
+        f_successful_to_ = true;
         ROS_DEBUG("Successfully taken off.");
       }
     }
@@ -480,7 +480,7 @@ bool FlightDetector::initializeP0()
   // Very naive initialization of P0 by averaging the first 100
   // measurements before takeoff
   // TODO(anyone): make it better
-  if (!(f_have_P0_ || f_successful_to))
+  if (!(f_have_P0_ || f_successful_to_))
   {
     if (baro_data_buffer_.size() > 100)
     {

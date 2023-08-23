@@ -85,28 +85,28 @@ private:
   std::vector<ImuData_t> imu_data_buffer_;    //!< buffer for IMU measurements
   std::vector<LrfData_t> lrf_data_buffer_;    //!< buffer for LRF measurements
   std::vector<BaroData_t> baro_data_buffer_;  //!< buffer for BARO measurements
-  double takeoff_start_time{ 0.0 };
+  double takeoff_start_time_{ 0.0 };
 
   /// ROS Static Parameters
   double k_sensor_readings_window_s_{ 1.0 };  //!< buffer time
   double k_angle_threshold_deg_{ 10.0 };      //!< threshold for gravity direction in [deg]
   double k_distance_threshold_m_{ 0.1 };      //!< threshold for distance in [m]
   double k_takeoff_threshold_m_{ 0.5 };       //!< threshold for takeoff in [m]
-  std::vector<double> k_R_IP = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
-  std::vector<double> k_R_PL = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
-  std::vector<double> k_t_PL = { 0, 0, 0 };
-  double k_landed_wait_time = { 30.0 };
+  std::vector<double> k_R_IP_ = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  std::vector<double> k_R_PL_ = { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+  std::vector<double> k_t_PL_ = { 0, 0, 0 };
+  double k_landed_wait_time_ = { 30.0 };
   bool k_use_median_ = { false };  //!< determines if the SENSOR distance calculations use median or mean
   bool k_is_playback_{ false };    //!< determines if a playback is active (used for debugging)
   bool k_require_srv_{ true };     //!< determines if a service call has to be performed befor any topic publication
 
   /// Internal Flags
-  std::atomic<bool> f_have_imu_{ false };      //!< flag to determine if IMU measurement was received
-  std::atomic<bool> f_have_lrf_{ false };      //!< flag to determine if LRF measurement was received
-  std::atomic<bool> f_have_baro_{ false };     //!< flag to determine if baro measurement was received
-  std::atomic<bool> f_have_P0_{ false };       //!< flag to determine if baro was initialized
-  std::atomic<bool> f_reqested_to{ false };    //!< flag to determine if takeoff has been requested (once)
-  std::atomic<bool> f_successful_to{ false };  //!< flag to determine if takeoff has succeeded
+  std::atomic<bool> f_have_imu_{ false };       //!< flag to determine if IMU measurement was received
+  std::atomic<bool> f_have_lrf_{ false };       //!< flag to determine if LRF measurement was received
+  std::atomic<bool> f_have_baro_{ false };      //!< flag to determine if baro measurement was received
+  std::atomic<bool> f_have_P0_{ false };        //!< flag to determine if baro was initialized
+  std::atomic<bool> f_reqested_to_{ false };    //!< flag to determine if takeoff has been requested (once)
+  std::atomic<bool> f_successful_to_{ false };  //!< flag to determine if takeoff has succeeded
   Sensor sensor_{ Sensor::UNDEFINED };
 
   /// Barometer Parameters

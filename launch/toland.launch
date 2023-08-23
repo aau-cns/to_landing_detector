@@ -14,9 +14,9 @@
 -->
 <launch>
   <!-- rostopic strings -->
-  <arg name="imu_topic"       default="/imu" />   <!-- Mandatory -->
-  <arg name="lrf_topic"       default="/lrf" />   <!-- LRF is used as primary sensor, if toic is undefined it will fallback to baro -->
-  <arg name="baro_topic"      default="/baro" />  <!-- BARO used if LRF is not defined -->
+  <arg name="imu_topic"       default="imu" />   <!-- Mandatory -->
+  <arg name="lrf_topic"       default="lrf" />   <!-- LRF is used as primary sensor, if toic is undefined it will fallback to baro -->
+  <arg name="baro_topic"      default="baro" />  <!-- BARO used if LRF is not defined -->
   <arg name="default_sensor"  default="lrf" />
 
   <!-- calibration parameters -->
