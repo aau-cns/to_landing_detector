@@ -116,6 +116,7 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
 
   // setup publishers
   pub_land_ = nh_.advertise<std_msgs::Bool>("is_landed", 1);
+  pub_to_ = nh_.advertise<std_msgs::Bool>("is_takeoff", 1);
 
   // setup services
   srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
@@ -462,6 +463,11 @@ void FlightDetector::publishLanded()
 
       if (dist > k_takeoff_threshold_m_)
       {
+        // setup message
+        std_msgs::Bool msg;
+        msg.data = true;  // INFO(scm): no real information to set here atm
+        pub_to_.publish(msg);
+
         f_successful_to = true;
         ROS_DEBUG("Successfully taken off.");
       }

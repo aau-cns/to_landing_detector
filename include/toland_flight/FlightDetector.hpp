@@ -78,7 +78,8 @@ private:
 
   ros::ServiceServer srv_to_;  //!< Takeoff service
 
-  ros::Publisher pub_land_;  //!< publishes
+  ros::Publisher pub_land_;  //!< publishes a message upon registering a landing
+  ros::Publisher pub_to_;    //!< publishes a message upon registering a takeoff
 
   /// Measurement buffers
   std::vector<ImuData_t> imu_data_buffer_;    //!< buffer for IMU measurements
