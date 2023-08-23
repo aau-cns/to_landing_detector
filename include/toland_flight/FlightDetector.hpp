@@ -97,6 +97,7 @@ private:
   double k_landed_wait_time = { 30.0 };
   bool k_use_median_ = { false };  //!< determines if the SENSOR distance calculations use median or mean
   bool k_is_playback_{ false };    //!< determines if a playback is active (used for debugging)
+  bool k_require_srv_{ true };     //!< determines if a service call has to be performed befor any topic publication
 
   /// Internal Flags
   std::atomic<bool> f_have_imu_{ false };      //!< flag to determine if IMU measurement was received

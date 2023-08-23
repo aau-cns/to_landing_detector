@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (C) 2022 Martin Scheiber and Alessandro Fortnasier,
+  Copyright (C) 2022-2023 Martin Scheiber and Alessandro Fortnasier,
   Control of Networked Systems, University of Klagenfurt, Austria.
 
   All rights reserved.
@@ -14,10 +14,10 @@
 -->
 <launch>
   <!-- rostopic strings -->
-  <arg name="imu_topic" default="/imu" />   <!-- Mandatory -->
-  <arg name="lrf_topic" default="/lrf" />   <!-- LRF is used as primary sensor, if toic is undefined it will fallback to baro -->
-  <arg name="baro_topic" default="/baro" /> <!-- BARO used if LRF is not defined -->
-  <arg name="default_sensor" default="lrf" />
+  <arg name="imu_topic"       default="/imu" />   <!-- Mandatory -->
+  <arg name="lrf_topic"       default="/lrf" />   <!-- LRF is used as primary sensor, if toic is undefined it will fallback to baro -->
+  <arg name="baro_topic"      default="/baro" />  <!-- BARO used if LRF is not defined -->
+  <arg name="default_sensor"  default="lrf" />
 
   <!-- calibration parameters -->
   <arg name="R_IP"      default="[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]" />
@@ -31,6 +31,7 @@
   <arg name="takeoff_theshold"        default="0.5" />
   <arg name="use_median"              default="false" />
   <arg name="playback"                default="false" />
+  <arg name="require_srv_call"        default="true" />
 
 
   <node name="toland_detector" pkg="to_landing_detector" type="toland_node" output="screen" respawn="true" clear_params="true">
@@ -47,6 +48,7 @@
     <param name="takeoff_theshold"        type="double" value="$(arg takeoff_theshold)" />
     <param name="use_median"              type="bool"   value="$(arg use_median)" />
     <param name="playback"                type="bool"   value="$(arg playback)" />
+    <param name="require_srv_call"        type="bool"   value="$(arg require_srv_call)" />
 
     <!-- calibration parameters -->
     <rosparam param="R_PI" subst_value="true">$(arg R_IP)</rosparam>

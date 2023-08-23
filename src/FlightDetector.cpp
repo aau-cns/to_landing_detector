@@ -35,6 +35,8 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   nh_.param<bool>("use_median", k_use_median_, k_use_median_);
   // Get distance calculation method
   nh_.param<bool>("playback", k_is_playback_, k_is_playback_);
+  // Get flag for requirement on service
+  nh_.param<bool>("require_srv_call", k_require_srv_, k_require_srv_);
 
   // topic strings
   std::string imu_topic, lrf_topic, baro_topic, default_sensor;
@@ -94,14 +96,17 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   }
 
   // print parameter summary
-  ROS_INFO_STREAM(
-      "Parameter summary as loaded by toland"
-          << "\n\tsensor_readings_window [s]: " << k_sensor_readings_window_s_ << "\n\tangle_threshold [deg]:      "
-          << k_angle_threshold_deg_ << "\n\tdistance_threshold [m]:     " << k_distance_threshold_m_
-          << "\n\ttakeoff_theshold [m]:       " << k_takeoff_threshold_m_
-          << "\n\tuse_median [bool]:          " << k_use_median_ << "\n\timu_topic [string]:         " << imu_topic
-          << "\n\tlrf_topic [string]:         " << lrf_topic << "\n\tbaro_topic [string]:        " << baro_topic
-          << "\n\tdefault sensor [string]:    " << sensor_ << std::endl;);
+  ROS_INFO_STREAM("Parameter summary as loaded by toland"
+                      << "\n\tsensor_readings_window [s]: " << k_sensor_readings_window_s_ << "\n"
+                      << "\tangle_threshold [deg]:      " << k_angle_threshold_deg_ << "\n"
+                      << "\tdistance_threshold [m]:     " << k_distance_threshold_m_ << "\n"
+                      << "\ttakeoff_theshold [m]:       " << k_takeoff_threshold_m_ << "\n"
+                      << "\tuse_median [bool]:          " << k_use_median_ << "\n"
+                      << "\trequire_srv_call [bool]:    " << k_require_srv_ << "\n"
+                      << "\timu_topic [string]:         " << imu_topic << "\n"
+                      << "\tlrf_topic [string]:         " << lrf_topic << "\n"
+                      << "\tbaro_topic [string]:        " << baro_topic << "\n"
+                      << "\tdefault sensor [string]:    " << sensor_ << std::endl;);
   // TODO(scm): missing debug information on vectors loaded
 
   // setup subscribers
@@ -114,6 +119,10 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
 
   // setup services
   srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
+
+  // update 'f_requested_to' based on requirement to servicec call
+  f_reqested_to = !k_require_srv_;
+  takeoff_start_time = ros::Time::now().toSec();
 }  // FlightDetector()
 
 void FlightDetector::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -216,7 +225,7 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   res.message = res_msg;
 
   // setup request takeof
-  f_reqested_to = is_sucess;
+  f_reqested_to = !k_require_srv_ || is_sucess;
   takeoff_start_time = ros::Time::now().toSec();
 
 #ifndef NDEBUG
