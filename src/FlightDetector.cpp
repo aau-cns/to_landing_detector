@@ -154,15 +154,15 @@ void FlightDetector::lrfCallback(const sensor_msgs::Range::ConstPtr& msg)
   // Push measurement into buffer
   lrf_data_buffer_.emplace_back(meas);
 
-  // Remove oldest if sensor reading window width is reached
-  removeOldestWindow<LrfData_t>(meas, &lrf_data_buffer_);
-
   // set lrf flag
   f_have_lrf_ = true;
   ROS_DEBUG_STREAM("*   add lrf-height:  " << meas.range);
 
   // publish landed message if below threshold
   publishLanded();
+
+  // Remove oldest if sensor reading window width is reached
+  removeOldestWindow<LrfData_t>(meas, &lrf_data_buffer_);
 
 }  // void lrfCallback(...)
 
@@ -188,15 +188,15 @@ void FlightDetector::baroCallback(const sensor_msgs::FluidPressure::ConstPtr& ms
   // Push measurement into buffer
   baro_data_buffer_.emplace_back(meas);
 
-  // Remove oldest if sensor reading window width is reached
-  removeOldestWindow<BaroData_t>(meas, &baro_data_buffer_);
-
   // set baro flag
   f_have_baro_ = true;
   ROS_DEBUG_STREAM("*   add baro-height: " << meas.h);
 
   // publish landed message if below threshold
   publishLanded();
+
+  // Remove oldest if sensor reading window width is reached
+  removeOldestWindow<BaroData_t>(meas, &baro_data_buffer_);
 
 }  // void baroCallback(...)
 
@@ -346,11 +346,18 @@ double FlightDetector::calculateDistance()
   {
     // Return if buffer is empty
     if (lrf_data_buffer_.empty())
+    {
+      ROS_DEBUG_STREAM("> empty buffer");
       return -1.0;
+    }
 
     // Return if minimum window is not reached
     if ((lrf_data_buffer_.back().timestamp - lrf_data_buffer_.front().timestamp) < k_sensor_readings_window_s_)
-      return false;
+
+    {
+      ROS_DEBUG_STREAM("> not enough readings in buffer");
+      return -1.0;
+    }
 
     // return if last measurement is older than minimum window time
     if (!k_is_playback_ && (ros::Time::now().toSec() - lrf_data_buffer_.back().timestamp) > k_sensor_readings_window_s_)
@@ -517,11 +524,13 @@ bool FlightDetector::removeOldestWindow(const T meas, std::vector<T>* const buff
   }
   else
   {
+    const double max_readings_window = 1.5 * k_sensor_readings_window_s_;
+
     // Remove oldest if sensor reading window width is reached
-    if ((meas.timestamp - buffer->begin()->timestamp) > k_sensor_readings_window_s_)
+    if ((meas.timestamp - buffer->begin()->timestamp) > max_readings_window)
     {
       // Get first time to be kept (timestamp of the first element within the specified window)
-      double Dt = meas.timestamp - k_sensor_readings_window_s_;
+      double Dt = meas.timestamp - max_readings_window;
 
       // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
       auto it = std::find_if(buffer->begin(), buffer->end(), [&Dt](T meas) { return meas.timestamp >= Dt; });
