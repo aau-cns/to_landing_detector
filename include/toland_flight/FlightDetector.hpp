@@ -105,7 +105,7 @@ private:
   std::atomic<bool> f_have_lrf_{ false };       //!< flag to determine if LRF measurement was received
   std::atomic<bool> f_have_baro_{ false };      //!< flag to determine if baro measurement was received
   std::atomic<bool> f_have_P0_{ false };        //!< flag to determine if baro was initialized
-  std::atomic<bool> f_reqested_to_{ false };    //!< flag to determine if takeoff has been requested (once)
+  std::atomic<bool> f_requested_to_{ false };   //!< flag to determine if takeoff has been requested (once)
   std::atomic<bool> f_successful_to_{ false };  //!< flag to determine if takeoff has succeeded
   Sensor sensor_{ Sensor::UNDEFINED };
 

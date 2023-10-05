@@ -122,7 +122,7 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
 
   // update 'f_requested_to' based on requirement to servicec call
-  f_reqested_to_ = !k_require_srv_;
+  f_requested_to_ = !k_require_srv_;
   takeoff_start_time_ = ros::Time::now().toSec();
 }  // FlightDetector()
 
@@ -226,7 +226,7 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   res.message = res_msg;
 
   // setup request takeof
-  f_reqested_to_ = !k_require_srv_ || is_sucess;
+  f_requested_to_ = !k_require_srv_ || is_sucess;
   takeoff_start_time_ = ros::Time::now().toSec();
 
 #ifndef NDEBUG
@@ -443,7 +443,7 @@ double FlightDetector::calculateDistance()
 void FlightDetector::publishLanded()
 {
   // publish landed message if below threshold
-  if (f_reqested_to_)
+  if (f_requested_to_)
   {
     ROS_DEBUG_STREAM("> checking if LANDED");
 
