@@ -30,12 +30,12 @@ corresponding paper and consult the `LICENSE` file for a detailed explanation.
 
 ## Getting Started
 
-### Prerequesites
+### Prerequisites
 This package is part of the [CNS Flight Stack] and thus depends on the other packages of the flight stack:
 - [CNS Flight Stack: Autonomy Engine]
 
 
-Further the following libraries are required
+Further, the following libraries are required
 - Eigen
 - ROS noetic
 
@@ -71,10 +71,11 @@ The following parameters can be set to modify the detector's behavior:
 | `R_IP`                    | rotation calibration between IMU and "body" frame | Identity Matrix |
 | `R_LP`                    | rotation calibration between "body" frame and range sensor | Identity Matrix |
 | `t_LP`                    | translation calibration between "body" frame and range sensor | Zero Vector |
-| `lrf_use_median`          | automatic state changes in sequencer (if used without Autonomy Engine) | `false` |
-| `imu_topic`               | ROS topic name for the IMU measurements | `/imu` |
-| `lrf_topic`               | ROS topic name for the range measurements | `/lrf` |
-| `baro_topic`              | ROS topic name for the barometric measurements | `/baro` |
+| `use_median`              | use the median rather than the mean for LRF-based caluclation | `false` |
+| `require_srv_call`        | require a service call before any takeoff is detected | `false` |
+| `imu_topic`               | ROS topic name for the IMU measurements | `~imu` |
+| `lrf_topic`               | ROS topic name for the range measurements | `~lrf` |
+| `baro_topic`              | ROS topic name for the barometric measurements | `~baro` |
 
 ### Default Launchfile Parameters
 
@@ -86,9 +87,9 @@ roslaunch toland_flight toland.launch <PARAM1_NAME>:=<VALUE> <PARAM2_NAME>:=<VAL
 | Launch parameter | description | default value |
 |---------------|-------------|---------------|
 | `default_sensor`          | default AGL sensor to use (`lrf`, `baro`, or `disabled`) | `lrf` |
-| `imu_topic`               | ROS topic name for the IMU measurements  | `/imu` |
-| `lrf_topic`               | ROS topic name for the range measurements  | `/lrf` |
-| `baro_topic`               | ROS topic name for the barometric measurements  | `/baro` |
+| `imu_topic`               | ROS topic name for the IMU measurements  | `~imu` |
+| `lrf_topic`               | ROS topic name for the range measurements  | `~lrf` |
+| `baro_topic`              | ROS topic name for the barometric measurements  | `~baro` |
 | `R_IP`                    | rotation calibration between IMU and "body" frame | Identity Matrix |
 | `R_PL`                    | rotation calibration between "body" frame and range sensor | Identity Matrix |
 | `t_PL`                    | translation calibration between "body" frame and range sensor | Zero Vector |
@@ -96,7 +97,8 @@ roslaunch toland_flight toland.launch <PARAM1_NAME>:=<VALUE> <PARAM2_NAME>:=<VAL
 | `angle_threshold`         | threshold in [deg] acceptable as flat (gravity-aligned check) | `10.0` |
 | `distance_threshold`      | threshold in [m] acceptable as on the ground (height check) | `0.15` |
 | `takeoff_theshold`        | threshold in [m] upon which a successful takeoff is registered | `0.5` |
-| `lrf_use_median`          | use the median rather than the mean for LRF-based caluclation | `false` |
+| `use_median`              | use the median rather than the mean for LRF-based caluclation | `false` |
+| `require_srv_call`        | require a service call before any takeoff is detected | `true` |
 
 ### Usage without Autonomy Engine
 
@@ -111,9 +113,14 @@ message: "number of measurements -- IMU: x -- LRF: x -- BARO: x"
 
 If this service was called once, you will receive a message on the `/toland/is_landed` topic, if a landing was detected. In order for this to happen, the UAV must have taken off successfully (`dist>takeoff_theshold`). Please note that for this feature a **range sensor must be used**.
 
+In case you do not want to execute the service call, you can deactivate it by launching
+```bash
+roslaunch toland_flight toland.launch require_srv_call:=False
+```
+
 ## Architecture
 
-Please refer to the academic paper for further insights of the Takeoff and Landing Detector.
+Please refer to the academic paper for further insights into the Takeoff and Landing Detector.
 
 
 ## Known Issues
@@ -121,20 +128,20 @@ Please refer to the academic paper for further insights of the Takeoff and Landi
 #### Landing Detection Message only transmitted once
 The current implementation only transmits a landing detection message once. There it does not check for flatness (as it should not). However, when you then request via the provided service if the vehicle is on the ground, it might return `false` as the flatness (gravity-aligned) condition might not be met.
 
-We are working on this issue, which requires modification also on the [CNS Flight Stack: Autonomy Engine].
+We are working on this issue, which also requires modification in the [CNS Flight Stack: Autonomy Engine].
 
 #### Barometer triggers landing detection early
-This is due to inaccurate barometric measurements (especially indoors) before flight. The current initialization routine sets the reference pressure at startup using the mean of the first 100 measurements. If between startup external influences (even start of the motors) would change the reference pressure, technically a restart of the node is currently required.
+This is due to inaccurate barometric measurements (especially indoors) before flight. The current initialization routine sets the reference pressure at startup using the mean of the first 100 measurements. If between startup external influences (even the start of the motors) would change the reference pressure, technically a restart of the node is currently required.
 
-This issue is also WIP, but can be circumvent by using a more accurate AGL sensor.
+This issue is also WIP but can be circumvented by using a more accurate AGL sensor.
 
 ## Package Layout
 
 ```console
 /path/to/to_landing_detector$ tree -L 3 --noreport --charset unicode
 .
-|-- CHANGELOG.md
 |-- CMakeLists.txt
+|-- CONTRIBUTORS.md
 |-- include
 |   |-- toland_flight
 |   |   `-- FlightDetector.hpp

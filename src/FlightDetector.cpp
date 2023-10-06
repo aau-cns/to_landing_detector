@@ -26,15 +26,17 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   // Get takeoff threshold for platform landing check
   nh_.param<double>("takeoff_theshold", k_takeoff_threshold_m_, k_takeoff_threshold_m_);
   // Get IMU-Platform rotation
-  nh_.param<std::vector<double>>("R_IP", k_R_IP, k_R_IP);
+  nh_.param<std::vector<double>>("R_IP", k_R_IP_, k_R_IP_);
   // Get LRF-Platform rotation
-  nh_.param<std::vector<double>>("R_LP", k_R_PL, k_R_PL);
+  nh_.param<std::vector<double>>("R_LP", k_R_PL_, k_R_PL_);
   // Get LRF-Platform translation
-  nh_.param<std::vector<double>>("t_LP", k_t_PL, k_t_PL);
+  nh_.param<std::vector<double>>("t_LP", k_t_PL_, k_t_PL_);
   // Get distance calculation method
   nh_.param<bool>("use_median", k_use_median_, k_use_median_);
   // Get distance calculation method
   nh_.param<bool>("playback", k_is_playback_, k_is_playback_);
+  // Get flag for requirement on service
+  nh_.param<bool>("require_srv_call", k_require_srv_, k_require_srv_);
 
   // topic strings
   std::string imu_topic, lrf_topic, baro_topic, default_sensor;
@@ -64,12 +66,12 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   // read topic parameters
   if (!nh_.getParam("imu_topic", imu_topic))
   {
-    imu_topic = "/imu";
+    imu_topic = "imu";
     ROS_WARN_STREAM("No IMU topic defined, using " << imu_topic << std::endl);
   }
   if (!nh_.getParam("lrf_topic", lrf_topic))
   {
-    lrf_topic = "/lrf";
+    lrf_topic = "lrf";
     ROS_WARN_STREAM("No LRF topic defined" << std::endl);
   }
   else
@@ -81,7 +83,7 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   }
   if (!nh_.getParam("baro_topic", baro_topic))
   {
-    baro_topic = "/baro";
+    baro_topic = "baro";
     ROS_WARN_STREAM("No BARO topic defined" << std::endl);
   }
   else
@@ -94,14 +96,17 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
   }
 
   // print parameter summary
-  ROS_INFO_STREAM(
-      "Parameter summary as loaded by toland"
-          << "\n\tsensor_readings_window [s]: " << k_sensor_readings_window_s_ << "\n\tangle_threshold [deg]:      "
-          << k_angle_threshold_deg_ << "\n\tdistance_threshold [m]:     " << k_distance_threshold_m_
-          << "\n\ttakeoff_theshold [m]:       " << k_takeoff_threshold_m_
-          << "\n\tuse_median [bool]:          " << k_use_median_ << "\n\timu_topic [string]:         " << imu_topic
-          << "\n\tlrf_topic [string]:         " << lrf_topic << "\n\tbaro_topic [string]:        " << baro_topic
-          << "\n\tdefault sensor [string]:    " << sensor_ << std::endl;);
+  ROS_INFO_STREAM("Parameter summary as loaded by toland"
+                      << "\n\tsensor_readings_window [s]: " << k_sensor_readings_window_s_ << "\n"
+                      << "\tangle_threshold [deg]:      " << k_angle_threshold_deg_ << "\n"
+                      << "\tdistance_threshold [m]:     " << k_distance_threshold_m_ << "\n"
+                      << "\ttakeoff_theshold [m]:       " << k_takeoff_threshold_m_ << "\n"
+                      << "\tuse_median [bool]:          " << k_use_median_ << "\n"
+                      << "\trequire_srv_call [bool]:    " << k_require_srv_ << "\n"
+                      << "\timu_topic [string]:         " << imu_topic << "\n"
+                      << "\tlrf_topic [string]:         " << lrf_topic << "\n"
+                      << "\tbaro_topic [string]:        " << baro_topic << "\n"
+                      << "\tdefault sensor [string]:    " << sensor_ << std::endl;);
   // TODO(scm): missing debug information on vectors loaded
 
   // setup subscribers
@@ -111,9 +116,14 @@ FlightDetector::FlightDetector() : nh_("toland_detector")
 
   // setup publishers
   pub_land_ = nh_.advertise<std_msgs::Bool>("is_landed", 1);
+  pub_to_ = nh_.advertise<std_msgs::Bool>("is_takeoff", 1);
 
   // setup services
   srv_to_ = nh_.advertiseService("service/takeoff", &FlightDetector::takeoffHandler, this);
+
+  // update 'f_requested_to' based on requirement to servicec call
+  f_requested_to_ = !k_require_srv_;
+  takeoff_start_time_ = ros::Time::now().toSec();
 }  // FlightDetector()
 
 void FlightDetector::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
@@ -144,15 +154,15 @@ void FlightDetector::lrfCallback(const sensor_msgs::Range::ConstPtr& msg)
   // Push measurement into buffer
   lrf_data_buffer_.emplace_back(meas);
 
-  // Remove oldest if sensor reading window width is reached
-  removeOldestWindow<LrfData_t>(meas, &lrf_data_buffer_);
-
   // set lrf flag
   f_have_lrf_ = true;
   ROS_DEBUG_STREAM("*   add lrf-height:  " << meas.range);
 
   // publish landed message if below threshold
   publishLanded();
+
+  // Remove oldest if sensor reading window width is reached
+  removeOldestWindow<LrfData_t>(meas, &lrf_data_buffer_);
 
 }  // void lrfCallback(...)
 
@@ -178,15 +188,15 @@ void FlightDetector::baroCallback(const sensor_msgs::FluidPressure::ConstPtr& ms
   // Push measurement into buffer
   baro_data_buffer_.emplace_back(meas);
 
-  // Remove oldest if sensor reading window width is reached
-  removeOldestWindow<BaroData_t>(meas, &baro_data_buffer_);
-
   // set baro flag
   f_have_baro_ = true;
   ROS_DEBUG_STREAM("*   add baro-height: " << meas.h);
 
   // publish landed message if below threshold
   publishLanded();
+
+  // Remove oldest if sensor reading window width is reached
+  removeOldestWindow<BaroData_t>(meas, &baro_data_buffer_);
 
 }  // void baroCallback(...)
 
@@ -216,8 +226,8 @@ bool FlightDetector::takeoffHandler(std_srvs::Trigger::Request& req, std_srvs::T
   res.message = res_msg;
 
   // setup request takeof
-  f_reqested_to = is_sucess;
-  takeoff_start_time = ros::Time::now().toSec();
+  f_requested_to_ = !k_require_srv_ || is_sucess;
+  takeoff_start_time_ = ros::Time::now().toSec();
 
 #ifndef NDEBUG
   // only perform this in debug mode
@@ -290,7 +300,7 @@ bool FlightDetector::checkFlatness()
   R_GI.block(0, 2, 3, 1) = z_axis;
 
   // Apply Rotation between the imu and the platform
-  Eigen::Matrix3d R_GP = R_GI * utils::math::Rot(k_R_IP);
+  Eigen::Matrix3d R_GP = R_GI * utils::math::Rot(k_R_IP_);
 
   // Convert Rotation matrix to euler angles
   Eigen::Vector3d eul_ang = utils::math::eul(R_GP);
@@ -336,11 +346,18 @@ double FlightDetector::calculateDistance()
   {
     // Return if buffer is empty
     if (lrf_data_buffer_.empty())
+    {
+      ROS_DEBUG_STREAM("> empty buffer");
       return -1.0;
+    }
 
     // Return if minimum window is not reached
     if ((lrf_data_buffer_.back().timestamp - lrf_data_buffer_.front().timestamp) < k_sensor_readings_window_s_)
-      return false;
+
+    {
+      ROS_DEBUG_STREAM("> not enough readings in buffer");
+      return -1.0;
+    }
 
     // return if last measurement is older than minimum window time
     if (!k_is_playback_ && (ros::Time::now().toSec() - lrf_data_buffer_.back().timestamp) > k_sensor_readings_window_s_)
@@ -369,7 +386,7 @@ double FlightDetector::calculateDistance()
     Eigen::Vector3d r_L(0, 0, range);
 
     // apply transformation between the lrf and the platform
-    Eigen::Vector3d r_P = utils::math::Rot(k_R_PL) * r_L + utils::math::Vec(k_t_PL);
+    Eigen::Vector3d r_P = utils::math::Rot(k_R_PL_) * r_L + utils::math::Vec(k_t_PL_);
 
     // return distance in z direction
     return r_P(2);
@@ -426,12 +443,12 @@ double FlightDetector::calculateDistance()
 void FlightDetector::publishLanded()
 {
   // publish landed message if below threshold
-  if (f_reqested_to)
+  if (f_requested_to_)
   {
     ROS_DEBUG_STREAM("> checking if LANDED");
 
     // check if we have taken off successfully (> threshold)
-    if (f_successful_to)
+    if (f_successful_to_)
     {
       if (checkLanded())
       {
@@ -441,7 +458,7 @@ void FlightDetector::publishLanded()
         pub_land_.publish(msg);
 
         // unset flags
-        f_successful_to = false;
+        f_successful_to_ = false;
         // f_requested_to = false;
       }
     }
@@ -453,7 +470,12 @@ void FlightDetector::publishLanded()
 
       if (dist > k_takeoff_threshold_m_)
       {
-        f_successful_to = true;
+        // setup message
+        std_msgs::Bool msg;
+        msg.data = true;  // INFO(scm): no real information to set here atm
+        pub_to_.publish(msg);
+
+        f_successful_to_ = true;
         ROS_DEBUG("Successfully taken off.");
       }
     }
@@ -465,7 +487,7 @@ bool FlightDetector::initializeP0()
   // Very naive initialization of P0 by averaging the first 100
   // measurements before takeoff
   // TODO(anyone): make it better
-  if (!(f_have_P0_ || f_successful_to))
+  if (!(f_have_P0_ || f_successful_to_))
   {
     if (baro_data_buffer_.size() > 100)
     {
@@ -502,11 +524,13 @@ bool FlightDetector::removeOldestWindow(const T meas, std::vector<T>* const buff
   }
   else
   {
+    const double max_readings_window = 1.5 * k_sensor_readings_window_s_;
+
     // Remove oldest if sensor reading window width is reached
-    if ((meas.timestamp - buffer->begin()->timestamp) > k_sensor_readings_window_s_)
+    if ((meas.timestamp - buffer->begin()->timestamp) > max_readings_window)
     {
       // Get first time to be kept (timestamp of the first element within the specified window)
-      double Dt = meas.timestamp - k_sensor_readings_window_s_;
+      double Dt = meas.timestamp - max_readings_window;
 
       // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
       auto it = std::find_if(buffer->begin(), buffer->end(), [&Dt](T meas) { return meas.timestamp >= Dt; });
